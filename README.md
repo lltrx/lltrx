@@ -1,7 +1,8 @@
-## Hi there I'm Turki a Software engineering student and web developer. 
+## Hi there <a href="https://www.gautamkrishnar.com/"><img src="https://media.giphy.com/media/hvRJCLFzcasrR4ia7z/giphy.gif" width="25px"></a>
 
-- I'm currently trying to improve my skills in Web development.
-- 2022 Goals: Be a full stack developer. 
+
+Hi I'm Turki, a Software engineering student and web developer. I really enjoy learning languages, frameworks and try to improve my skills in terms of web develompent by building some projects.
+
 
 ## Languages and Tools:
 <a href="https://code.visualstudio.com/" target="_blank"> <img src="https://raw.githubusercontent.com/github/explore/78df643247d429f6cc873026c0622819ad797942/topics/visual-studio-code/visual-studio-code.png" alt="git" width="40" height="40"/> </a>
@@ -11,10 +12,16 @@
 <a href="https://www.w3schools.com/css/" target="_blank"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original-wordmark.svg" alt="css3" width="40" height="40"/> </a>
 <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/javascript/javascript-original.svg" alt="javascript" width="40" height="40" /> </a> 
 <a href="https://www.python.org" target="_blank"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/python/python-original.svg" alt="python" width="40" height="40"/> </a>
+ <a href="https://www.typescriptlang.org/" target="_blank"> <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/typescript/typescript-original.svg" alt="typescript" width="40" height="40"/> </a>
+ <a href="https://nodejs.org/en/" target="_blank"> <img src="https://raw.githubusercontent.com/github/explore/78df643247d429f6cc873026c0622819ad797942/topics/nodejs/nodejs.png" alt="node.js" width="40" height="40"/> </a>
+ <a href="https://www.mongodb.com/" target="_blank"> <img src="https://www.vectorlogo.zone/logos/mongodb/mongodb-icon.svg" alt="Mongodb" width="40" height="40"/> </a>
+ <a href="https://tailwindcss.com/" target="_blank"> <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Tailwind_CSS_Logo.svg/2048px-Tailwind_CSS_Logo.svg.png" alt="Tailwind Css" width="40" height="40"/> </a>
+  
+## GitHub:
 
-## Visitors 
-![Visitor Count](https://profile-counter.glitch.me/{lltrx}/count.svg)
-
-## More 
-[![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=lltrx&layout=compact)](https://github.com/lltrx/github-readme-stats)
-
+<p align="center">
+<a href="https://github.com/lltrx">
+  <img height="180em" src="https://github-readme-stats-eight-theta.vercel.app/api?username=lltrx&show_icons=true&theme=react&include_all_commits=true&count_private=true"/>
+  <img height="180em" src="https://github-readme-stats-eight-theta.vercel.app/api/top-langs/?username=lltrx&layout=compact&langs_count=8&theme=react"/>
+</a>
+</p>
