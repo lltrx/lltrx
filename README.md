@@ -25,3 +25,6 @@ Hi I'm Turki, a Software engineering student and web developer. I really enjoy l
   <img height="180em" src="https://github-readme-stats-eight-theta.vercel.app/api/top-langs/?username=lltrx&layout=compact&langs_count=8&theme=react"/>
 </a>
 </p>
+
+## DaliyDev
+<a href="https://app.daily.dev/lltrx"><img src="https://api.daily.dev/devcards/c43f16f1a9644379a139f9db6fbc3bbb.png?r=ixk" width="400" alt="Turki Faisal's Dev Card"/></a>
