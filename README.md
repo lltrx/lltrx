@@ -4,8 +4,8 @@ Hey! I'm Turki, an app developer who loves building cool stuff for mobile and we
 
 ## 🚀 Current Status
 - 🔭 Working on: None
-- 🌱 Learning: Unity & AR Development
-- 👯 Looking to collaborate on: VR/AR Projects
+- 🌱 Learning: Cloud ☁️
+- 👯 Looking to collaborate on: Cloud ☁️
 - 💬 Available for: Freelance Projects & Technical Discussions
 
 ## 🤝 Connect With Me
