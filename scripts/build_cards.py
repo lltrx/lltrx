@@ -19,6 +19,7 @@ import argparse
 import datetime as dt
 import json
 import os
+import random
 import sys
 import urllib.request
 from collections import defaultdict
@@ -179,6 +180,16 @@ def streaks(days: dict[str, int], today: dt.date) -> tuple[dict, dict]:
     return current, longest
 
 
+def weekly_totals(days: dict[str, int], today: dt.date, count: int = 52) -> list[list]:
+    """Contributions in each of the last `count` 7-day windows, oldest first."""
+    weeks = []
+    for back in range(count - 1, -1, -1):
+        start = today - dt.timedelta(days=7 * back + 6)
+        total = sum(days.get((start + dt.timedelta(days=k)).isoformat(), 0) for k in range(7))
+        weeks.append([start.isoformat(), total])
+    return weeks
+
+
 def summarize(raw: dict, today: dt.date) -> dict:
     days = {d: n for d, n in raw["days"].items() if dt.date.fromisoformat(d) <= today}
 
@@ -214,6 +225,7 @@ def summarize(raw: dict, today: dt.date) -> dict:
         "this_year": per_year.get(str(today.year), 0),
         "per_year": dict(sorted(per_year.items())),
         "months": [[k, per_month.get(k, 0)] for k in months],
+        "weeks": weekly_totals(days, today),
         "current_streak": current,
         "longest_streak": longest,
         "languages": languages,
@@ -396,65 +408,258 @@ def render_stats(s: dict, theme: str) -> str:
     return "\n".join(out) + "\n"
 
 
-def render_header(theme: str, name: str, words: list[str], subtitle: str) -> str:
-    c = THEMES[theme]
-    W, H = 840, 200
+def mix(c1: str, c2: str, t: float) -> str:
+    """Blend two #rrggbb colors; t=0 gives c1, t=1 gives c2."""
+    a = [int(c1[i:i + 2], 16) for i in (1, 3, 5)]
+    b = [int(c2[i:i + 2], 16) for i in (1, 3, 5)]
+    return "#" + "".join(f"{round(x + (y - x) * t):02x}" for x, y in zip(a, b))
+
+
+def pts(*points: tuple[float, float]) -> str:
+    return " ".join(f"{x:.1f},{y:.1f}" for x, y in points)
+
+
+# The header is a city at night (a city by day in light mode). Each tower is one
+# week of contributions, so the skyline is redrawn from real data every day.
+# Tower faces blend from the "short" color to the "tall" color with height.
+SKYLINE = {
+    "dark": {
+        "sky": ("#05080f", "#0d1117"),
+        "blobs": [("#338ced", 0.30), ("#9887ef", 0.22), ("#00a888", 0.16)],
+        "ground": 0.22,
+        "top": ("#2b5590", "#a8d4ff"),
+        "left": ("#18325a", "#3f8ae6"),
+        "right": ("#0e1f3c", "#1d58ad"),
+        "edge": 0.35,
+        "lot": "#1a2230",
+        "window": "#ffd27a",
+        "window_opacity": 0.92,
+        "lit": 0.42,
+        "night": True,
+        "name": ("#f0f6fc", "#a5d0ff"),
+        "shine": 0.6,
+    },
+    "light": {
+        "sky": ("#e8f1ff", "#ffffff"),
+        "blobs": [("#84b9f3", 0.40), ("#c9bdf7", 0.34), ("#8fe0cf", 0.26)],
+        "ground": 0.14,
+        "top": ("#e9f2fd", "#ffffff"),
+        "left": ("#bcd5f2", "#78acea"),
+        "right": ("#98bbe4", "#3b82d6"),
+        "edge": 0.0,
+        "lot": "#dde5ee",
+        "window": "#0f4a96",
+        "window_opacity": 0.26,
+        "lit": 0.55,
+        "night": False,
+        "name": ("#1f2328", "#1757ac"),
+        "shine": 0.85,
+    },
+}
+
+
+def render_header(theme: str, s: dict, words: list[str], subtitle: str) -> str:
+    c, k = THEMES[theme], SKYLINE[theme]
+    W, H = 840, 350
+    rng = random.Random(1307)  # fixed seed: same data, same picture
+    weeks = s["weeks"]
+    counts = [n for _, n in weeks]
+    best = max(range(len(counts)), key=lambda i: counts[i])
+    top_week = counts[best] or 1
     cycle = 3 * len(words)
+    first = dt.date.fromisoformat(weeks[0][0])
+    last = dt.date.fromisoformat(s["updated"])
+    caption = f"The skyline is my GitHub activity: one tower per week, {first:%b %Y} – {last:%b %Y}"
 
     out = svg_open(
-        W, H, name, f"{name}. I build apps for {', '.join(words[:-1])} and {words[-1]}. {subtitle}."
+        W, H, name := s["name"],
+        f"{name}. I build apps for {', '.join(words[:-1])} and {words[-1]}. {subtitle}. "
+        f"A city skyline where each of {len(weeks)} towers is one week of GitHub contributions; "
+        f"the tallest, {counts[best]:,} contributions, is the week of {fmt_day(weeks[best][0], True)}.",
     )
-    keyframes = (
+
+    # ---- styles and animations (all CSS, so prefers-reduced-motion can stop them)
+    css = [
+        f"text{{font-family:{FONT};fill:{c['text']}}}",
+        f".m{{fill:{c['muted']}}}.a{{fill:{c['accent']}}}",
+        f".w{{opacity:0;animation:word {cycle}s ease-in-out infinite backwards}}.w0{{opacity:1}}",
+        *(f".w{i}{{animation-delay:{3 * i}s}}" for i in range(1, len(words))),
         "@keyframes word{0%{opacity:0;transform:translateY(8px)}"
         f"{100 * 0.4 / cycle:.2f}%,{100 * 2.6 / cycle:.2f}%{{opacity:1;transform:translateY(0)}}"
-        f"{100 * 3 / cycle:.2f}%,100%{{opacity:0;transform:translateY(-8px)}}}}"
-    )
-    out.append(
-        "<style>"
-        f"text{{font-family:{FONT};fill:{c['text']}}}"
-        f".m{{fill:{c['muted']}}}.a{{fill:{c['accent']}}}"
-        f".w{{opacity:0;animation:word {cycle}s ease-in-out infinite backwards}}"
-        ".w0{opacity:1}"
-        + "".join(f".w{i}{{animation-delay:{3 * i}s}}" for i in range(1, len(words)))
-        + keyframes
-        + "@media (prefers-reduced-motion:reduce){.w{animation:none}}"
-        "</style>"
-    )
-    out.append(
-        "<defs>"
-        '<pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse">'
-        f'<circle cx="2" cy="2" r="1.1" fill="{c["muted"]}" opacity="{c["dots"]}"/></pattern>'
-        '<radialGradient id="fade" cx="50%" cy="38%" r="62%">'
-        '<stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>'
-        "</radialGradient>"
-        f'<mask id="dotmask"><rect width="{W}" height="{H}" fill="url(#fade)"/></mask>'
-        '<radialGradient id="glow" cx="50%" cy="50%" r="50%">'
-        f'<stop offset="0" stop-color="{c["accent"]}" stop-opacity="{c["glow"]}"/>'
-        f'<stop offset="1" stop-color="{c["accent"]}" stop-opacity="0"/></radialGradient>'
-        f'<clipPath id="frame"><rect x="1" y="1" width="{W - 2}" height="{H - 2}" rx="11"/></clipPath>'
-        "</defs>"
-    )
-    out.append(f'<rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="12" fill="{c["bg"]}"/>')
-    out.append('<g clip-path="url(#frame)">')
-    out.append(f'<rect width="{W}" height="{H}" fill="url(#dots)" mask="url(#dotmask)"/>')
-    out.append(f'<ellipse cx="{W / 2}" cy="104" rx="330" ry="110" fill="url(#glow)"/>')
+        f"{100 * 3 / cycle:.2f}%,100%{{opacity:0;transform:translateY(-8px)}}}}",
+        # towers rise from the ground one after another
+        ".t{transform-box:fill-box;transform-origin:50% 100%;"
+        "animation:rise 1.1s cubic-bezier(.2,.9,.25,1) backwards}",
+        "@keyframes rise{from{transform:scaleY(0)}}",
+        # aurora blobs drift slowly
+        ".b{animation:drift 18s ease-in-out infinite alternate}",
+        ".b1{animation-duration:23s;animation-direction:alternate-reverse}.b2{animation-duration:29s}",
+        "@keyframes drift{to{transform:translate(46px,14px)}}",
+        # light sweep across the name
+        ".shine{animation:shine 7s ease-in-out 1.6s infinite}",
+        "@keyframes shine{0%{transform:translateX(0)}30%,100%{transform:translateX(1150px)}}",
+        # windows, stars, aviation light, shooting star
+        ".f{animation:flicker 4.3s steps(1) infinite}",
+        "@keyframes flicker{0%,100%{opacity:1}40%{opacity:.25}48%{opacity:1}71%{opacity:.4}}",
+        ".tw{animation:twinkle 3.1s ease-in-out infinite alternate}",
+        "@keyframes twinkle{from{opacity:.15}to{opacity:1}}",
+        ".beacon{animation:beacon 1.8s steps(1) infinite}",
+        "@keyframes beacon{0%{opacity:1}50%{opacity:.12}}",
+        ".meteor{opacity:0;animation:meteor 9s linear 3s infinite}",
+        "@keyframes meteor{0%{opacity:0;transform:translate(0,0)}2%{opacity:1}"
+        "11%{opacity:0;transform:translate(300px,118px)}100%{opacity:0;transform:translate(300px,118px)}}",
+        ".late{animation:appear .6s ease-out backwards}",
+        "@keyframes appear{from{opacity:0;transform:translateY(6px)}}",
+        "@media (prefers-reduced-motion:reduce){.w,.t,.b,.shine,.f,.tw,.beacon,.meteor,.late{animation:none}}",
+    ]
+    out.append("<style>" + "".join(css) + "</style>")
 
-    out.append(
-        f'<text x="{W / 2}" y="92" font-size="46" font-weight="700" text-anchor="middle" '
-        f'letter-spacing="-1">{escape(name)}</text>'
-    )
+    # ---- defs
+    defs = [
+        f'<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="{k["sky"][0]}"/>'
+        f'<stop offset="1" stop-color="{k["sky"][1]}"/></linearGradient>',
+        f'<clipPath id="frame"><rect x="1" y="1" width="{W - 2}" height="{H - 2}" rx="11"/></clipPath>',
+        f'<radialGradient id="ground"><stop offset="0" stop-color="{c["accent"]}" stop-opacity="{k["ground"]}"/>'
+        f'<stop offset="1" stop-color="{c["accent"]}" stop-opacity="0"/></radialGradient>',
+        f'<linearGradient id="namefill" gradientUnits="userSpaceOnUse" x1="{W / 2 - 170}" x2="{W / 2 + 170}">'
+        f'<stop offset="0" stop-color="{k["name"][0]}"/><stop offset="1" stop-color="{k["name"][1]}"/></linearGradient>',
+        '<linearGradient id="shinefill"><stop offset="0" stop-color="#fff" stop-opacity="0"/>'
+        f'<stop offset=".5" stop-color="#fff" stop-opacity="{k["shine"]}"/>'
+        '<stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>',
+        '<linearGradient id="meteorfill" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="70" y2="28">'
+        '<stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff"/></linearGradient>',
+        f'<radialGradient id="moonglow"><stop offset="0" stop-color="#ffd27a" stop-opacity="{0.22 if k["night"] else 0.5}"/>'
+        '<stop offset="1" stop-color="#ffd27a" stop-opacity="0"/></radialGradient>',
+        '<clipPath id="nameclip">'
+        f'<text x="{W / 2}" y="84" font-size="50" font-weight="800" text-anchor="middle" letter-spacing="-1.2">'
+        f"{escape(name)}</text></clipPath>",
+    ]
+    for i, (color, alpha) in enumerate(k["blobs"]):
+        defs.append(
+            f'<radialGradient id="blob{i}"><stop offset="0" stop-color="{color}" stop-opacity="{alpha}"/>'
+            f'<stop offset="1" stop-color="{color}" stop-opacity="0"/></radialGradient>'
+        )
+    out.append("<defs>" + "".join(defs) + "</defs>")
+
+    out.append(f'<rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="12" fill="url(#sky)"/>')
+    out.append('<g clip-path="url(#frame)">')
+
+    # ---- aurora
+    for i, (cx, cy, rx, ry) in enumerate([(210, 70, 260, 120), (640, 60, 280, 110), (430, 190, 330, 90)]):
+        out.append(f'<ellipse class="b b{i}" cx="{cx}" cy="{cy}" rx="{rx}" ry="{ry}" fill="url(#blob{i})"/>')
+
+    # ---- stars and a shooting star (night only)
+    if k["night"]:
+        for i in range(70):
+            x, y = rng.uniform(8, W - 8), rng.uniform(8, 210)
+            r, o = rng.uniform(0.5, 1.25), rng.uniform(0.25, 0.85)
+            twinkle = rng.random() < 0.25
+            extra = f' class="tw" style="animation-delay:{rng.uniform(0, 3):.2f}s"' if twinkle else ""
+            out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r:.2f}" fill="#fff" opacity="{o:.2f}"{extra}/>')
+        out.append(
+            '<g transform="translate(70,22)"><line class="meteor" x1="0" y1="0" x2="70" y2="28" '
+            'stroke="url(#meteorfill)" stroke-width="1.6" stroke-linecap="round"/></g>'
+        )
+        # a crescent moon: a disc with a smaller offset disc cut out of it
+        out.append(
+            '<mask id="crescent"><circle cx="772" cy="58" r="15" fill="#fff"/>'
+            '<circle cx="779" cy="53" r="13" fill="#000"/></mask>'
+        )
+        out.append('<circle cx="772" cy="58" r="34" fill="url(#moonglow)"/>')
+        out.append('<circle cx="772" cy="58" r="15" fill="#fff4d6" mask="url(#crescent)"/>')
+    else:
+        out.append('<circle cx="772" cy="58" r="46" fill="url(#moonglow)"/>')
+        out.append('<circle cx="772" cy="58" r="15" fill="#ffd27a" opacity=".9"/>')
+
+    # ---- the city
+    margin, max_h = 26, 118
+    step = (W - 2 * margin) / (len(counts) + 1)
+    hw = step * 0.86          # half-width of a tower's footprint on screen
+    hd = hw * 0.577           # half-depth (isometric: tan 30°)
+    row_gap = step * 0.577
+    back_y = H - 58
+    out.append(f'<ellipse cx="{W / 2}" cy="{back_y + 6}" rx="470" ry="58" fill="url(#ground)"/>')
+
+    towers = []
+    for i, n in enumerate(counts):
+        cx = margin + step * (i + 1)
+        cy = back_y + (row_gap if i % 2 else 0)
+        h = 0 if n == 0 else 5 + (max_h - 5) * n / top_week
+        towers.append((i, n, cx, cy, h))
+
+    beacon = None
+    for i, n, cx, cy, h in sorted(towers, key=lambda t: (t[0] % 2, t[0])):  # back row, then front row
+        A, B, C, D = (cx, cy - hd), (cx + hw, cy), (cx, cy + hd), (cx - hw, cy)
+        up = lambda p, z=h: (p[0], p[1] - z)  # noqa: E731
+        if n == 0:
+            out.append(f'<polygon points="{pts(A, B, C, D)}" fill="{k["lot"]}"/>')
+            continue
+        t = (n / top_week) ** 0.6
+        top, left, right = (mix(*k[face], t) for face in ("top", "left", "right"))
+        g = [f'<g class="t" style="animation-delay:{0.25 + i * 0.035:.2f}s">']
+        g.append(f'<polygon points="{pts(D, C, up(C), up(D))}" fill="{left}"/>')
+        g.append(f'<polygon points="{pts(C, B, up(B), up(C))}" fill="{right}"/>')
+        edge = f' stroke="{mix(top, "#ffffff", 0.5)}" stroke-opacity="{k["edge"]}" stroke-width="0.6"' if k["edge"] else ""
+        g.append(f'<polygon points="{pts(up(A), up(B), up(C), up(D))}" fill="{top}"{edge}/>')
+
+        # windows: two columns per face, a floor every 6.5px
+        z = 6.0
+        while z + 3 < h - 4:
+            for p0, p1 in ((D, C), (C, B)):
+                for u in (0.22, 0.58):
+                    if rng.random() > k["lit"]:
+                        continue
+                    du = 0.22
+                    q = [
+                        (p0[0] + (p1[0] - p0[0]) * uu, p0[1] + (p1[1] - p0[1]) * uu - zz)
+                        for uu, zz in ((u, z), (u + du, z), (u + du, z + 3), (u, z + 3))
+                    ]
+                    flicker = ""
+                    if k["night"] and rng.random() < 0.06:
+                        flicker = f' class="f" style="animation-delay:{rng.uniform(0, 4):.2f}s"'
+                    g.append(
+                        f'<polygon points="{pts(*q)}" fill="{k["window"]}" '
+                        f'opacity="{k["window_opacity"]}"{flicker}/>'
+                    )
+            z += 6.5
+        g.append("</g>")
+        out.extend(g)
+        if i == best:
+            beacon = (cx, cy - h)
+
+    # ---- best week: antenna, blinking light and a label
+    if beacon:
+        bx, by = beacon
+        # Appears once the city has finished rising.
+        out.append(f'<g class="late" style="animation-delay:{0.25 + len(counts) * 0.035 + 0.9:.2f}s">')
+        out.append(f'<line x1="{bx}" y1="{by:.1f}" x2="{bx}" y2="{by - 11:.1f}" stroke="{c["muted"]}" stroke-width="1"/>')
+        out.append(f'<circle class="beacon" cx="{bx}" cy="{by - 12:.1f}" r="5" fill="#ff5f57" opacity=".25"/>')
+        out.append(f'<circle class="beacon" cx="{bx}" cy="{by - 12:.1f}" r="2.2" fill="#ff5f57"/>')
+        if abs(bx - W / 2) < 240:  # under the title: put the label beside the light instead
+            anchor, lx, ly = "start", bx + 10, by - 8
+        elif bx > W - 140:
+            anchor, lx, ly = "end", bx + 8, by - 24
+        else:
+            anchor, lx, ly = "middle", bx, by - 24
+        out.append(
+            f'<text x="{lx:.1f}" y="{ly:.1f}" font-size="11.5" font-weight="600" text-anchor="{anchor}">'
+            f'Best week <tspan class="m" font-weight="400">· {counts[best]:,} contributions</tspan></text>'
+        )
+        out.append("</g>")
+
+    # ---- name with a light sweep, rotating tagline, subtitle
+    out.append('<g clip-path="url(#nameclip)">')
+    out.append(f'<rect x="0" y="20" width="{W}" height="80" fill="url(#namefill)"/>')
+    out.append('<g transform="skewX(-22)"><rect class="shine" x="-120" y="20" width="110" height="80" fill="url(#shinefill)"/></g>')
+    out.append("</g>")
     pivot = W / 2 + 38
-    out.append(
-        f'<text x="{pivot - 4}" y="134" font-size="21" text-anchor="end" class="m">I build apps for</text>'
-    )
+    out.append(f'<text x="{pivot - 4}" y="124" font-size="21" text-anchor="end" class="m">I build apps for</text>')
     for i, word in enumerate(words):
         out.append(
-            f'<text x="{pivot + 4}" y="134" font-size="21" font-weight="600" class="a w w{i}">'
-            f"{escape(word)}</text>"
+            f'<text x="{pivot + 4}" y="124" font-size="21" font-weight="600" class="a w w{i}">{escape(word)}</text>'
         )
-    out.append(
-        f'<text x="{W / 2}" y="166" font-size="14" text-anchor="middle" class="m">{escape(subtitle)}</text>'
-    )
+    out.append(f'<text x="{W / 2}" y="154" font-size="14" text-anchor="middle" class="m">{escape(subtitle)}</text>')
+    out.append(f'<text x="{W / 2}" y="{H - 14}" font-size="11" text-anchor="middle" class="m">{escape(caption)}</text>')
     out.append("</g>")
     out.append(
         f'<rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="12" fill="none" stroke="{c["border"]}"/>'
@@ -487,9 +692,7 @@ def main() -> int:
     for theme in THEMES:
         (args.out / f"stats-{theme}.svg").write_text(render_stats(summary, theme))
         (args.out / f"header-{theme}.svg").write_text(
-            render_header(
-                theme, summary["name"], ["mobile", "the web", "the Mac"], "App developer · Riyadh, Saudi Arabia"
-            )
+            render_header(theme, summary, ["mobile", "the web", "the Mac"], "App developer · Riyadh, Saudi Arabia")
         )
     print(
         f"{summary['login']}: {summary['total']:,} contributions, "

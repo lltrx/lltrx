@@ -1,6 +1,6 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/header-dark.svg">
-  <img src="assets/header-light.svg" alt="Turki Faisal. I build apps for mobile, the web and the Mac." width="100%">
+  <img src="assets/header-light.svg" alt="Turki Faisal. I build apps for mobile, the web and the Mac. Below, a city skyline where each tower is one week of my GitHub contributions over the last year." width="100%">
 </picture>
 
 <p align="center">
