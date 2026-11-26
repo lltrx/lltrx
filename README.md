@@ -11,9 +11,10 @@
 
 Hey! I'm Turki 👋, an app developer based in Riyadh. I've worked on all kinds of projects across mobile and the web, and lately the Mac too. I really enjoy making apps people find useful, and when I'm not coding you'll probably catch me geeking out over the latest frameworks or whatever new technology just dropped.
 
-- 🔨 **Building** [Shelf](https://github.com/lltrx/shelf-clipboard), a clipboard manager for macOS that never leaves your Mac
-- ☁️ **Learning** cloud, and up for collaborating on cloud projects
-- 🥽 **Exploring** VR and AR with Unity and Unreal, because who doesn't want to build virtual worlds? 😄
+- 🏢 **Part of** Ajel and GCDC
+- 🛠️ **Built** Soghari and Markly, and [Shelf](https://github.com/lltrx/shelf-clipboard), a clipboard manager for macOS that never leaves your Mac
+- ☁️ **Next up:** cloud architecture
+- 🏠 **Into** homelabs, running and self-hosting my own services at home
 - 💬 **Open to** freelance projects and technical discussions
 
 ## Featured project
@@ -56,9 +57,6 @@ Signed and notarized by Apple · [See it in action](https://github.com/lltrx/she
 
 **Data, cloud & tools** · MongoDB, Firebase, Google Cloud, Git, VS Code, Xcode, Figma<br>
 <img src="https://skillicons.dev/icons?i=mongodb,firebase,gcp,git,vscode,figma" height="36" alt="MongoDB, Firebase, Google Cloud, Git, VS Code, Figma">
-
-**Exploring** · Unity and Unreal Engine for VR and AR<br>
-<img src="https://skillicons.dev/icons?i=unity,unreal" height="36" alt="Unity, Unreal Engine">
 
 ## GitHub activity
 
