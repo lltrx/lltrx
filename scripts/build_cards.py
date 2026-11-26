@@ -4,12 +4,11 @@
 Writes light and dark versions of:
   assets/header-{light,dark}.svg     skyline banner: one tower per week of contributions
   assets/terminal-{light,dark}.svg   terminal that types out whoami, now, uptime and next
-  assets/vitals-{light,dark}.svg     heart monitor of the last 60 days
   assets/stats-{light,dark}.svg      contributions, streaks, monthly activity, languages
   assets/certs-{light,dark}.svg      certifications as holographic cards (when profile.json lists any)
   assets/stats.json                  the numbers the cards were drawn from
 
-Text on the cards (tagline, terminal lines, certifications) comes from profile.json.
+Text on the cards (tagline, terminal lines, projects, certifications) comes from profile.json.
 
 Usage:
   GITHUB_TOKEN=... python3 scripts/build_cards.py --user lltrx   # fetch from the GitHub API
@@ -233,10 +232,6 @@ def summarize(raw: dict, today: dt.date) -> dict:
         "per_year": dict(sorted(per_year.items())),
         "months": [[k, per_month.get(k, 0)] for k in months],
         "weeks": weekly_totals(days, today),
-        "last_60_days": [
-            [d.isoformat(), days.get(d.isoformat(), 0)]
-            for d in (today - dt.timedelta(days=59 - k) for k in range(60))
-        ],
         "current_streak": current,
         "longest_streak": longest,
         "languages": languages,
@@ -700,13 +695,14 @@ def render_terminal(s: dict, profile: dict, theme: str) -> str:
     pad = max(len(name) for name, _ in term["now"]) + 3
     lines = [("cmd", "whoami"), ("out", [("hl", s["name"]), ("out", f" · {term['whoami']}")]), ("cmd", "cat now.md")]
     lines += [("out", [("dim", "• "), ("hl", name.ljust(pad)), ("out", what)]) for name, what in term["now"]]
+    lines += [("cmd", "ls ~/projects"), ("out", [("hl", "  ".join(term["projects"]))])]
     lines += [
         ("cmd", "uptime"),
         ("out", [("out", "streak "), ("num", f"{cur} day" + ("" if cur == 1 else "s")), ("out", " · best "),
                  ("num", str(best)), ("out", " · "), ("num", f"{s['this_year']:,}"),
                  ("out", f" contributions in {today.year}")]),
         ("cmd", "next"),
-        ("out", [("hl2", term["next"])]),
+        ("out", [("hl2", term["next"]), ("out", f" · {term['status']}")]),
     ]
     W, top, step = 840, 78, 25
     H = top + step * (len(lines) - 1) + 30
@@ -765,108 +761,6 @@ def render_terminal(s: dict, profile: dict, theme: str) -> str:
         f'<rect class="cursor" style="animation-delay:{t:.2f}s,{t:.2f}s" x="{24 + CHAR_W * (last_len + 1):.0f}" '
         f'y="{y - step - 15}" width="9" height="19" fill="{k["cursor"]}"/>'
     )
-    out.append("</svg>")
-    return "\n".join(out) + "\n"
-
-
-# --------------------------------------------------------------------- vital signs card
-
-VITALS = {
-    "dark": {"case": "#0b0f14", "case_edge": "#21262d", "label": "#8b949e"},
-    "light": {"case": "#e9edf1", "case_edge": "#d1d9e0", "label": "#59636e"},
-}
-
-
-def render_vitals(s: dict, theme: str) -> str:
-    """A heart monitor: one beat per day for the last 60 days, plus four readouts."""
-    k = VITALS[theme]
-    days = s["last_60_days"]
-    counts = [n for _, n in days]
-    peak_i = max(range(len(counts)), key=lambda i: counts[i])
-    peak = counts[peak_i] or 1
-    avg30 = round(sum(counts[-30:]) / 30)
-    W, H = 840, 270
-    left, right, base = 36, 600, 166
-    dx = (right - left) / len(counts)
-    pts, x = [(left, base)], left
-    for n in counts:
-        if n:
-            r = 10 + 90 * (n / peak) ** 0.6
-            pts += [(x + dx * .18, base), (x + dx * .26, base - 4), (x + dx * .34, base), (x + dx * .42, base + 6),
-                    (x + dx * .5, base - r), (x + dx * .58, base + 11), (x + dx * .66, base),
-                    (x + dx * .8, base - 6), (x + dx * .9, base)]
-        pts.append((x + dx, base))
-        x += dx
-    length = sum(((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) ** 0.5 for a, b in zip(pts, pts[1:]))
-    d = "M" + " L".join(f"{a:.1f},{b:.1f}" for a, b in pts)
-    first, last = dt.date.fromisoformat(days[0][0]), dt.date.fromisoformat(days[-1][0])
-    peak_day = dt.date.fromisoformat(days[peak_i][0])
-    readouts = [
-        ("PULSE", str(avg30), "/day", "30-day avg", "#56d364", 648, 70),
-        ("STREAK", str(s["current_streak"]["days"]), "d", "current", "#e3b341", 742, 70),
-        ("PEAK", f"{counts[peak_i]:,}", "", f"{peak_day:%b} {peak_day.day}", "#39c5cf", 648, 170),
-        ("RECORD", str(s["longest_streak"]["days"]), "d", "longest", "#d2a8ff", 742, 170),
-    ]
-    desc = (
-        f"Heart monitor of daily GitHub contributions from {fmt_day(days[0][0], True)} to {fmt_day(days[-1][0], True)}: "
-        f"one beat per day, flat on days off. Pulse {avg30} contributions a day over 30 days, "
-        f"current streak {s['current_streak']['days']} days, peak day {counts[peak_i]} on {fmt_day(days[peak_i][0], True)}, "
-        f"longest streak {s['longest_streak']['days']} days."
-    )
-    out = svg_open(W, H, "Vital signs", desc)
-    out.append(
-        "<style>"
-        f"text{{font-family:{MONO}}}"
-        ".head{font-size:13px;font-weight:700;letter-spacing:3px;fill:#56d364}"
-        ".dim{font-size:11px;fill:#6e8b77}.lbl{font-size:11px;font-weight:700;letter-spacing:2px}"
-        ".big{font-size:36px;font-weight:700}.unit{font-size:13px;font-weight:500;fill:#6e8b77}"
-        f".trace{{animation:draw 7s linear infinite}}"
-        f"@keyframes draw{{0%{{stroke-dashoffset:{length:.0f}}}85%,100%{{stroke-dashoffset:0}}}}"
-        ".dot{offset-distance:100%;offset-rotate:0deg;animation:dot 7s linear infinite}"
-        "@keyframes dot{0%{offset-distance:0%}85%,100%{offset-distance:100%}}"
-        ".heart{transform-box:fill-box;transform-origin:center;animation:beat 1.05s ease-in-out infinite}"
-        "@keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.28)}30%{transform:scale(1)}45%{transform:scale(1.12)}}"
-        "@media (prefers-reduced-motion:reduce){.trace,.dot,.heart{animation:none}}"
-        "</style>"
-    )
-    out.append(
-        "<defs>"
-        '<pattern id="g1" width="12" height="12" patternUnits="userSpaceOnUse">'
-        '<path d="M12,0 V12 H0" fill="none" stroke="#2ea043" stroke-opacity=".10"/></pattern>'
-        '<pattern id="g5" width="60" height="60" patternUnits="userSpaceOnUse">'
-        '<path d="M60,0 V60 H0" fill="none" stroke="#2ea043" stroke-opacity=".22"/></pattern>'
-        "</defs>"
-    )
-    out.append(f'<rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="16" fill="{k["case"]}" stroke="{k["case_edge"]}"/>')
-    out.append('<rect x="16" y="16" width="602" height="238" rx="9" fill="#03140b" stroke="#12301e"/>')
-    out.append('<rect x="16" y="16" width="602" height="238" fill="url(#g1)"/>')
-    out.append('<rect x="16" y="16" width="602" height="238" fill="url(#g5)"/>')
-    out.append('<rect x="630" y="16" width="194" height="238" rx="9" fill="#05090d" stroke="#1a2430"/>')
-    out.append('<line x1="640" y1="146" x2="814" y2="146" stroke="#1a2430"/>')
-    out.append('<line x1="727" y1="26" x2="727" y2="244" stroke="#1a2430"/>')
-    out.append('<text x="32" y="42" class="head">VITALS</text>')
-    out.append(f'<text x="118" y="42" class="dim">{escape(s["login"])} · last 60 days</text>')
-    out.append('<path class="heart" d="M560,36 c-3,-5 -11,-4 -11,2 c0,5 11,11 11,11 c0,0 11,-6 11,-11 c0,-6 -8,-7 -11,-2z" fill="#f85149"/>')
-    out.append('<text x="578" y="45" class="dim">LIVE</text>')
-    # The previous sweep stays on screen, dimmed; the bright trace redraws over it.
-    out.append(f'<path d="{d}" fill="none" stroke="#3fb950" stroke-opacity=".38" stroke-width="1.6" stroke-linejoin="round"/>')
-    for width, color, opacity in ((6, "#3fb950", 0.25), (1.8, "#56d364", 1)):
-        out.append(
-            f'<path class="trace" d="{d}" fill="none" stroke="{color}" stroke-opacity="{opacity}" stroke-width="{width}" '
-            f'stroke-linejoin="round" style="stroke-dasharray:{length:.0f}"/>'
-        )
-    out.append(f'<circle class="dot" r="3.5" fill="#d2ffd8" style="offset-path:path(\'{d}\')"/>')
-    out.append(
-        f'<text x="32" y="240" class="dim">{first:%b} {first.day} – {last:%b} {last.day} · one beat per day · '
-        "taller beat = more contributions · flat = day off</text>"
-    )
-    for label, value, unit, sub, color, x, y in readouts:
-        unit_span = f'<tspan class="unit" dx="4">{unit}</tspan>' if unit else ""
-        out.append(
-            f'<text x="{x}" y="{y}" class="lbl" fill="{color}">{label}</text>'
-            f'<text x="{x}" y="{y + 40}" class="big" fill="{color}">{value}{unit_span}</text>'
-            f'<text x="{x}" y="{y + 60}" class="dim">{escape(sub)}</text>'
-        )
     out.append("</svg>")
     return "\n".join(out) + "\n"
 
@@ -992,7 +886,6 @@ def main() -> int:
             render_header(theme, summary, profile["tagline"], profile["subtitle"])
         )
         (args.out / f"terminal-{theme}.svg").write_text(render_terminal(summary, profile, theme))
-        (args.out / f"vitals-{theme}.svg").write_text(render_vitals(summary, theme))
         cert_file = args.out / f"certs-{theme}.svg"
         if certs:
             cert_file.write_text(render_certs(certs, theme))

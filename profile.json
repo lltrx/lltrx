@@ -7,9 +7,11 @@
     "now": [
       ["AjelPay", "payments platform"],
       ["GCDC", "built the community portal"],
-      ["Shelf", "clipboard manager for macOS"]
+      ["homelab", "self-hosting my own services at home"]
     ],
-    "next": "cloud architecture"
+    "projects": ["shelf", "soghari", "markly"],
+    "next": "cloud architecture",
+    "status": "open to freelance & tech chats"
   },
   "certifications": []
 }

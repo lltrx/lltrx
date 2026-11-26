@@ -11,17 +11,8 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/terminal-dark.svg">
-  <img src="assets/terminal-light.svg" alt="A terminal session. whoami: Turki Faisal, app developer in Riyadh. cat now.md: AjelPay, payments platform; GCDC, built the community portal; Shelf, clipboard manager for macOS. uptime: my current streak, best streak and contributions this year. next: cloud architecture." width="100%">
+  <img src="assets/terminal-light.svg" alt="A terminal session. whoami: Turki Faisal, app developer in Riyadh. cat now.md: AjelPay, payments platform; GCDC, built the community portal; homelab, self-hosting my own services at home. ls ~/projects: Shelf, Soghari, Markly. uptime: my current streak, best streak and contributions this year. next: cloud architecture, and open to freelance projects and technical discussions." width="100%">
 </picture>
-
-Hey! I'm Turki 👋, an app developer based in Riyadh. I've worked on all kinds of projects across mobile and the web, and lately the Mac too. I really enjoy making apps people find useful, and when I'm not coding you'll probably catch me geeking out over the latest frameworks or whatever new technology just dropped.
-
-- 💳 **Part of** AjelPay, a payments platform for invoices, payment links, subscriptions and instalments
-- 🤝 **Part of** GCDC, the Google Developer Community in Saudi Arabia, where I developed [the community portal](https://saudigcdc.com/en): events, registration, certificates and the blog
-- 🛠️ **Built** Soghari and Markly, and [Shelf](https://github.com/lltrx/shelf-clipboard), a clipboard manager for macOS that never leaves your Mac
-- ☁️ **Next up:** cloud architecture
-- 🏠 **Into** homelabs, running and self-hosting my own services at home
-- 💬 **Open to** freelance projects and technical discussions
 
 ## Featured project
 
@@ -65,11 +56,6 @@ Signed and notarized by Apple · [See it in action](https://github.com/lltrx/she
 <img src="https://skillicons.dev/icons?i=mongodb,firebase,gcp,git,vscode,figma" height="36" alt="MongoDB, Firebase, Google Cloud, Git, VS Code, Figma">
 
 ## GitHub activity
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/vitals-dark.svg">
-  <img src="assets/vitals-light.svg" alt="Vital signs: a heart monitor where each beat is one day of GitHub contributions over the last 60 days, with readouts for average per day, current streak, peak day and longest streak" width="100%">
-</picture>
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/stats-dark.svg">
