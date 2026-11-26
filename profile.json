@@ -1,0 +1,65 @@
+{
+  "tagline": [
+    "mobile",
+    "the web",
+    "the Mac"
+  ],
+  "subtitle": "App developer · Riyadh, Saudi Arabia",
+  "terminal": {
+    "host": "turki@riyadh",
+    "whoami": "app developer · Riyadh, Saudi Arabia",
+    "now": [
+      [
+        "AjelPay",
+        "payments platform"
+      ],
+      [
+        "GCDC",
+        "built the community portal"
+      ],
+      [
+        "homelab",
+        "self-hosting my own services at home"
+      ]
+    ],
+    "projects": [
+      "shelf",
+      "soghari",
+      "markly"
+    ],
+    "next": "cloud architecture",
+    "status": "open to freelance & tech chats"
+  },
+  "certifications": [
+    {
+      "name": "Associate Cloud Engineer",
+      "issuer": "Google Cloud",
+      "issued": "2025-08-30",
+      "expires": "2028-08-30",
+      "url": "https://www.credly.com/badges/1e88786b-0ee6-424d-9d8c-269f066c0f49",
+      "color": "#4285f4",
+      "badge": "assets/badges/google-cloud-associate-cloud-engineer.png"
+    },
+    {
+      "name": "AWS Certified Cloud Practitioner",
+      "title": "Cloud Practitioner",
+      "issuer": "Amazon Web Services",
+      "issued": "2026-04-08",
+      "expires": "2029-04-08",
+      "url": "https://www.credly.com/badges/d223cabb-a82e-4da0-b2a7-9a73c1c198ab",
+      "color": "#ff9900",
+      "badge": "assets/badges/aws-certified-cloud-practitioner.png"
+    },
+    {
+      "name": "Certified Partner Specialist: Gemini Enterprise Agent Development",
+      "kicker": "PARTNER SPECIALIST",
+      "title": "Gemini Enterprise Agent Development",
+      "issuer": "Google Cloud",
+      "issued": "2026-09-20",
+      "expires": "2027-03-20",
+      "url": "https://www.credly.com/badges/51734f12-24ab-4155-adf5-71561e03b406",
+      "color": "#8c7cf7",
+      "badge": "assets/badges/google-cloud-gemini-enterprise-agent-development.png"
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+name: Update profile cards
+
+# Redraws the cards in assets/ from the GitHub API and profile.json, and commits
+# them when anything changed. Runs daily, on demand, and when the script or the
+# profile text changes.
+on:
+  schedule:
+    - cron: "23 3 * * *" # 06:23 in Riyadh
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - scripts/build_cards.py
+      - profile.json
+      - .github/workflows/profile-cards.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: profile-cards
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build cards
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/build_cards.py --user "${{ github.repository_owner }}"
+
+      - name: Commit changes
+        run: |
+          git add assets/ README.md
+          if git diff --cached --quiet; then
+            echo "Cards unchanged."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update profile cards"
+          git push
