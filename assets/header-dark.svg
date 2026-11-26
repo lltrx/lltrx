@@ -1,68 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="840" height="248" viewBox="0 0 840 248" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="200" viewBox="0 0 840 200" role="img" aria-labelledby="t d">
 <title id="t">Turki Faisal</title>
-<desc id="d">Turki Faisal. I build apps for mobile, the web and the Mac.</desc>
-<style>text{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;fill:#f0f6fc}.m{fill:#9198a1}.a{fill:#338ced}.mono{font-family:ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace}.drift{animation:drift 70s linear infinite}.w{opacity:0;animation:word 9s ease-in-out infinite backwards}.w0{opacity:1}.w1{animation-delay:3s}.w2{animation-delay:6s}@keyframes drift{from{transform:translateX(0)}to{transform:translateX(-1120px)}}@keyframes word{0%{opacity:0;transform:translateY(8px)}4.44%,28.89%{opacity:1;transform:translateY(0)}33.33%,100%{opacity:0;transform:translateY(-8px)}}@media (prefers-reduced-motion:reduce){.drift,.w{animation:none}}</style>
-<defs><pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.1" fill="#9198a1" opacity="0.35"/></pattern><radialGradient id="fade" cx="50%" cy="38%" r="62%"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="dotmask"><rect width="840" height="248" fill="url(#fade)"/></mask><radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#338ced" stop-opacity="0.22"/><stop offset="1" stop-color="#338ced" stop-opacity="0"/></radialGradient><linearGradient id="edges" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.16" stop-color="#fff"/><stop offset="0.84" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient><mask id="edgemask"><rect width="840" height="248" fill="url(#edges)"/></mask><clipPath id="frame"><rect x="1" y="1" width="838" height="246" rx="11"/></clipPath></defs>
-<rect x="0.5" y="0.5" width="839" height="247" rx="12" fill="#0d1117"/>
+<desc id="d">Turki Faisal. I build apps for mobile, the web and the Mac. App developer · Riyadh, Saudi Arabia.</desc>
+<style>text{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;fill:#f0f6fc}.m{fill:#9198a1}.a{fill:#338ced}.w{opacity:0;animation:word 9s ease-in-out infinite backwards}.w0{opacity:1}.w1{animation-delay:3s}.w2{animation-delay:6s}@keyframes word{0%{opacity:0;transform:translateY(8px)}4.44%,28.89%{opacity:1;transform:translateY(0)}33.33%,100%{opacity:0;transform:translateY(-8px)}}@media (prefers-reduced-motion:reduce){.w{animation:none}}</style>
+<defs><pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.1" fill="#9198a1" opacity="0.35"/></pattern><radialGradient id="fade" cx="50%" cy="38%" r="62%"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><mask id="dotmask"><rect width="840" height="200" fill="url(#fade)"/></mask><radialGradient id="glow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#338ced" stop-opacity="0.22"/><stop offset="1" stop-color="#338ced" stop-opacity="0"/></radialGradient><clipPath id="frame"><rect x="1" y="1" width="838" height="198" rx="11"/></clipPath></defs>
+<rect x="0.5" y="0.5" width="839" height="199" rx="12" fill="#0d1117"/>
 <g clip-path="url(#frame)">
-<rect width="840" height="248" fill="url(#dots)" mask="url(#dotmask)"/>
-<ellipse cx="420.0" cy="96" rx="330" ry="120" fill="url(#glow)"/>
-<text x="420.0" y="88" font-size="46" font-weight="700" text-anchor="middle" letter-spacing="-1">Turki Faisal</text>
-<text x="454.0" y="130" font-size="21" text-anchor="end" class="m">I build apps for</text>
-<text x="462.0" y="130" font-size="21" font-weight="600" class="a w w0">mobile</text>
-<text x="462.0" y="130" font-size="21" font-weight="600" class="a w w1">the web</text>
-<text x="462.0" y="130" font-size="21" font-weight="600" class="a w w2">the Mac</text>
-<g mask="url(#edgemask)"><g class="drift">
-<rect x="24" y="166" width="128" height="54" rx="10" fill="#151b23" stroke="#3d444d"/>
-<text x="36" y="186" font-size="10.5" class="m">Text</text>
-<text x="36" y="207" font-size="12">Ship Shelf 2.0</text>
-<rect x="164" y="166" width="128" height="54" rx="10" fill="#151b23" stroke="#3d444d"/>
-<text x="176" y="186" font-size="10.5" class="m">Code</text>
-<text x="176" y="207" font-size="12" class="mono">func paste() {}</text>
-<rect x="304" y="166" width="128" height="54" rx="10" fill="#151b23" stroke="#3d444d"/>
-<text x="316" y="186" font-size="10.5" class="m">Color</text>
-<rect x="316" y="195" width="14" height="14" rx="3" fill="#2F6FEB"/>
-<text x="336" y="207" font-size="12" class="mono">#2F6FEB</text>
-<rect x="444" y="166" width="128" height="54" rx="10" fill="#151b23" stroke="#3d444d"/>
-<text x="456" y="186" font-size="10.5" class="m">Link</text>
-<text x="456" y="207" font-size="12">github.com/lltrx</text>
-<rect x="584" y="166" width="128" height="54" rx="10" fill="#151b23" stroke="#3d444d"/>
-<text x="596" y="186" font-size="10.5" class="m">Snippet</text>
-<text x="596" y="207" font-size="12" class="mono">Thanks! {{date}}</text>
-<rect x="724" y="166" width="128" height="54" rx="10" fill="#151b23" stroke="#3d444d"/>
-<text x="736" y="186" font-size="10.5" class="m">API key</text>
-<text x="736" y="207" font-size="12" class="mono">••••••••0042</text>
-<rect x="864" y="166" width="128" height="54" rx="10" fill="#151b23" stroke="#3d444d"/>
-<text x="876" y="186" font-size="10.5" class="m">Text</text>
-<text x="876" y="207" font-size="12">Hello from Riyadh</text>
-<rect x="1004" y="166" width="128" height="54" rx="10" fill="#151b23" stroke="#3d444d"/>
-<text x="1016" y="186" font-size="10.5" class="m">Code</text>
-<text x="1016" y="207" font-size="12" class="mono">npm run dev</text>
-<rect x="1144" y="166" width="128" height="54" rx="10" fill="#151b23" stroke="#3d444d"/>
-<text x="1156" y="186" font-size="10.5" class="m">Text</text>
-<text x="1156" y="207" font-size="12">Ship Shelf 2.0</text>
-<rect x="1284" y="166" width="128" height="54" rx="10" fill="#151b23" stroke="#3d444d"/>
-<text x="1296" y="186" font-size="10.5" class="m">Code</text>
-<text x="1296" y="207" font-size="12" class="mono">func paste() {}</text>
-<rect x="1424" y="166" width="128" height="54" rx="10" fill="#151b23" stroke="#3d444d"/>
-<text x="1436" y="186" font-size="10.5" class="m">Color</text>
-<rect x="1436" y="195" width="14" height="14" rx="3" fill="#2F6FEB"/>
-<text x="1456" y="207" font-size="12" class="mono">#2F6FEB</text>
-<rect x="1564" y="166" width="128" height="54" rx="10" fill="#151b23" stroke="#3d444d"/>
-<text x="1576" y="186" font-size="10.5" class="m">Link</text>
-<text x="1576" y="207" font-size="12">github.com/lltrx</text>
-<rect x="1704" y="166" width="128" height="54" rx="10" fill="#151b23" stroke="#3d444d"/>
-<text x="1716" y="186" font-size="10.5" class="m">Snippet</text>
-<text x="1716" y="207" font-size="12" class="mono">Thanks! {{date}}</text>
-<rect x="1844" y="166" width="128" height="54" rx="10" fill="#151b23" stroke="#3d444d"/>
-<text x="1856" y="186" font-size="10.5" class="m">API key</text>
-<text x="1856" y="207" font-size="12" class="mono">••••••••0042</text>
-<rect x="1984" y="166" width="128" height="54" rx="10" fill="#151b23" stroke="#3d444d"/>
-<text x="1996" y="186" font-size="10.5" class="m">Text</text>
-<text x="1996" y="207" font-size="12">Hello from Riyadh</text>
-<rect x="2124" y="166" width="128" height="54" rx="10" fill="#151b23" stroke="#3d444d"/>
-<text x="2136" y="186" font-size="10.5" class="m">Code</text>
-<text x="2136" y="207" font-size="12" class="mono">npm run dev</text>
-</g></g></g>
-<rect x="0.5" y="0.5" width="839" height="247" rx="12" fill="none" stroke="#3d444d"/>
+<rect width="840" height="200" fill="url(#dots)" mask="url(#dotmask)"/>
+<ellipse cx="420.0" cy="104" rx="330" ry="110" fill="url(#glow)"/>
+<text x="420.0" y="92" font-size="46" font-weight="700" text-anchor="middle" letter-spacing="-1">Turki Faisal</text>
+<text x="454.0" y="134" font-size="21" text-anchor="end" class="m">I build apps for</text>
+<text x="462.0" y="134" font-size="21" font-weight="600" class="a w w0">mobile</text>
+<text x="462.0" y="134" font-size="21" font-weight="600" class="a w w1">the web</text>
+<text x="462.0" y="134" font-size="21" font-weight="600" class="a w w2">the Mac</text>
+<text x="420.0" y="166" font-size="14" text-anchor="middle" class="m">App developer · Riyadh, Saudi Arabia</text>
+</g>
+<rect x="0.5" y="0.5" width="839" height="199" rx="12" fill="none" stroke="#3d444d"/>
 </svg>

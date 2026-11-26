@@ -29,7 +29,6 @@ API = "https://api.github.com/graphql"
 TOP_LANGUAGES = 6  # the rest fold into "Other"
 
 FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif'
-MONO = 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace'
 
 # Surfaces and inks follow GitHub's own light and dark themes so the cards sit
 # naturally on the profile page. Series colors are a fixed categorical order,
@@ -397,29 +396,15 @@ def render_stats(s: dict, theme: str) -> str:
     return "\n".join(out) + "\n"
 
 
-# A row of clipboard cards, a nod to Shelf, drifting along the bottom of the banner.
-SHELF_CARDS = [
-    ("Text", "Ship Shelf 2.0", False, None),
-    ("Code", "func paste() {}", True, None),
-    ("Color", "#2F6FEB", True, "#2F6FEB"),
-    ("Link", "github.com/lltrx", False, None),
-    ("Snippet", "Thanks! {{date}}", True, None),
-    ("API key", "••••••••0042", True, None),
-    ("Text", "Hello from Riyadh", False, None),
-    ("Code", "npm run dev", True, None),
-]
-
-
-def render_header(theme: str, name: str, words: list[str]) -> str:
+def render_header(theme: str, name: str, words: list[str], subtitle: str) -> str:
     c = THEMES[theme]
-    W, H = 840, 248
-    pitch, card_w, card_h, card_y = 140, 128, 54, 166
-    loop = pitch * len(SHELF_CARDS)
+    W, H = 840, 200
     cycle = 3 * len(words)
 
-    out = svg_open(W, H, name, f"{name}. I build apps for {', '.join(words[:-1])} and {words[-1]}.")
+    out = svg_open(
+        W, H, name, f"{name}. I build apps for {', '.join(words[:-1])} and {words[-1]}. {subtitle}."
+    )
     keyframes = (
-        f"@keyframes drift{{from{{transform:translateX(0)}}to{{transform:translateX(-{loop}px)}}}}"
         "@keyframes word{0%{opacity:0;transform:translateY(8px)}"
         f"{100 * 0.4 / cycle:.2f}%,{100 * 2.6 / cycle:.2f}%{{opacity:1;transform:translateY(0)}}"
         f"{100 * 3 / cycle:.2f}%,100%{{opacity:0;transform:translateY(-8px)}}}}"
@@ -428,13 +413,11 @@ def render_header(theme: str, name: str, words: list[str]) -> str:
         "<style>"
         f"text{{font-family:{FONT};fill:{c['text']}}}"
         f".m{{fill:{c['muted']}}}.a{{fill:{c['accent']}}}"
-        f".mono{{font-family:{MONO}}}"
-        f".drift{{animation:drift 70s linear infinite}}"
         f".w{{opacity:0;animation:word {cycle}s ease-in-out infinite backwards}}"
         ".w0{opacity:1}"
         + "".join(f".w{i}{{animation-delay:{3 * i}s}}" for i in range(1, len(words)))
         + keyframes
-        + "@media (prefers-reduced-motion:reduce){.drift,.w{animation:none}}"
+        + "@media (prefers-reduced-motion:reduce){.w{animation:none}}"
         "</style>"
     )
     out.append(
@@ -448,53 +431,31 @@ def render_header(theme: str, name: str, words: list[str]) -> str:
         '<radialGradient id="glow" cx="50%" cy="50%" r="50%">'
         f'<stop offset="0" stop-color="{c["accent"]}" stop-opacity="{c["glow"]}"/>'
         f'<stop offset="1" stop-color="{c["accent"]}" stop-opacity="0"/></radialGradient>'
-        '<linearGradient id="edges" x1="0" x2="1">'
-        '<stop offset="0" stop-color="#fff" stop-opacity="0"/>'
-        '<stop offset="0.16" stop-color="#fff"/><stop offset="0.84" stop-color="#fff"/>'
-        '<stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
-        f'<mask id="edgemask"><rect width="{W}" height="{H}" fill="url(#edges)"/></mask>'
         f'<clipPath id="frame"><rect x="1" y="1" width="{W - 2}" height="{H - 2}" rx="11"/></clipPath>'
         "</defs>"
     )
     out.append(f'<rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="12" fill="{c["bg"]}"/>')
     out.append('<g clip-path="url(#frame)">')
     out.append(f'<rect width="{W}" height="{H}" fill="url(#dots)" mask="url(#dotmask)"/>')
-    out.append(f'<ellipse cx="{W / 2}" cy="96" rx="330" ry="120" fill="url(#glow)"/>')
+    out.append(f'<ellipse cx="{W / 2}" cy="104" rx="330" ry="110" fill="url(#glow)"/>')
 
     out.append(
-        f'<text x="{W / 2}" y="88" font-size="46" font-weight="700" text-anchor="middle" '
+        f'<text x="{W / 2}" y="92" font-size="46" font-weight="700" text-anchor="middle" '
         f'letter-spacing="-1">{escape(name)}</text>'
     )
     pivot = W / 2 + 38
     out.append(
-        f'<text x="{pivot - 4}" y="130" font-size="21" text-anchor="end" class="m">I build apps for</text>'
+        f'<text x="{pivot - 4}" y="134" font-size="21" text-anchor="end" class="m">I build apps for</text>'
     )
     for i, word in enumerate(words):
         out.append(
-            f'<text x="{pivot + 4}" y="130" font-size="21" font-weight="600" class="a w w{i}">'
+            f'<text x="{pivot + 4}" y="134" font-size="21" font-weight="600" class="a w w{i}">'
             f"{escape(word)}</text>"
         )
-
-    out.append('<g mask="url(#edgemask)"><g class="drift">')
-    for copy in range(2):
-        for i, (kind, body, mono, swatch) in enumerate(SHELF_CARDS):
-            x = 24 + copy * loop + i * pitch
-            out.append(
-                f'<rect x="{x}" y="{card_y}" width="{card_w}" height="{card_h}" rx="10" '
-                f'fill="{c["raised"]}" stroke="{c["border"]}"/>'
-            )
-            out.append(f'<text x="{x + 12}" y="{card_y + 20}" font-size="10.5" class="m">{kind}</text>')
-            tx = x + 12
-            if swatch:
-                out.append(
-                    f'<rect x="{tx}" y="{card_y + 29}" width="14" height="14" rx="3" fill="{swatch}"/>'
-                )
-                tx += 20
-            cls = ' class="mono"' if mono else ""
-            out.append(
-                f'<text x="{tx}" y="{card_y + 41}" font-size="12"{cls}>{escape(body)}</text>'
-            )
-    out.append("</g></g></g>")
+    out.append(
+        f'<text x="{W / 2}" y="166" font-size="14" text-anchor="middle" class="m">{escape(subtitle)}</text>'
+    )
+    out.append("</g>")
     out.append(
         f'<rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="12" fill="none" stroke="{c["border"]}"/>'
     )
@@ -526,7 +487,9 @@ def main() -> int:
     for theme in THEMES:
         (args.out / f"stats-{theme}.svg").write_text(render_stats(summary, theme))
         (args.out / f"header-{theme}.svg").write_text(
-            render_header(theme, summary["name"], ["mobile", "the web", "the Mac"])
+            render_header(
+                theme, summary["name"], ["mobile", "the web", "the Mac"], "App developer · Riyadh, Saudi Arabia"
+            )
         )
     print(
         f"{summary['login']}: {summary['total']:,} contributions, "
