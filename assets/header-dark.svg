@@ -544,9 +544,9 @@
 <polygon points="764.0,194.9 766.8,196.5 766.8,193.5 764.0,191.9" fill="#ffd27a" opacity="0.92"/>
 </g>
 <g class="t" style="animation-delay:2.04s">
-<polygon points="786.3,300.6 799.1,308.0 799.1,260.3 786.3,253.0" fill="#2e63a8"/>
-<polygon points="799.1,308.0 811.9,300.6 811.9,253.0 799.1,260.3" fill="#163f7b"/>
-<polygon points="799.1,245.6 811.9,253.0 799.1,260.3 786.3,253.0" fill="#719cce" stroke="#b8cee6" stroke-opacity="0.35" stroke-width="0.6"/>
+<polygon points="786.3,300.6 799.1,308.0 799.1,258.5 786.3,251.1" fill="#2e64aa"/>
+<polygon points="799.1,308.0 811.9,300.6 811.9,251.1 799.1,258.5" fill="#17407d"/>
+<polygon points="799.1,243.7 811.9,251.1 799.1,258.5 786.3,251.1" fill="#729ecf" stroke="#b8cee7" stroke-opacity="0.35" stroke-width="0.6"/>
 <polygon points="793.8,292.4 796.6,294.0 796.6,291.0 793.8,289.4" fill="#ffd27a" opacity="0.92" class="f" style="animation-delay:0.54s"/>
 <polygon points="801.9,287.3 804.8,285.7 804.8,282.7 801.9,284.3" fill="#ffd27a" opacity="0.92"/>
 <polygon points="806.5,284.7 809.4,283.1 809.4,280.1 806.5,281.7" fill="#ffd27a" opacity="0.92"/>
