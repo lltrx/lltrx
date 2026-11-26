@@ -21,6 +21,7 @@ Uses only the standard library, so the workflow needs no install step.
 from __future__ import annotations
 
 import argparse
+import base64
 import datetime as dt
 import json
 import math
@@ -788,7 +789,7 @@ def active_certs(certs: list[dict], today: str) -> list[dict]:
     return sorted(live, key=lambda c: c["issued"])
 
 
-def render_certs(certs: list[dict], theme: str) -> str:
+def render_certs(certs: list[dict], theme: str, base: Path = Path(".")) -> str:
     """Certifications as holographic trading cards in a fanned row."""
     c = THEMES[theme]
     W, H = 840, 330
@@ -827,6 +828,8 @@ def render_certs(certs: list[dict], theme: str) -> str:
         '<stop offset=".5" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>',
         '<pattern id="dots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".7" fill="#fff" opacity=".18"/></pattern>',
         '<clipPath id="card"><rect x="-84" y="-118" width="168" height="236" rx="14"/></clipPath>',
+        '<filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">'
+        '<feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity=".45"/></filter>',
     ]
     for i, cert in enumerate(certs):
         tint = cert.get("color", c["accent"])
@@ -837,7 +840,7 @@ def render_certs(certs: list[dict], theme: str) -> str:
     out.append("<defs>" + "".join(defs) + "</defs>")
     out.append(f'<ellipse cx="{W / 2}" cy="{H / 2}" rx="390" ry="145" fill="url(#glow)"/>')
     hexagon = " ".join(
-        f"{20 * math.cos(math.radians(60 * k - 90)):.1f},{-62 + 20 * math.sin(math.radians(60 * k - 90)):.1f}"
+        f"{20 * math.cos(math.radians(60 * k - 90)):.1f},{-70 + 20 * math.sin(math.radians(60 * k - 90)):.1f}"
         for k in range(6)
     )
     for i, cert in enumerate(certs):
@@ -865,17 +868,23 @@ def render_certs(certs: list[dict], theme: str) -> str:
         )
         out.append("</g>")
         out.append('<rect x="-84" y="-118" width="168" height="236" rx="14" fill="none" stroke="#fff" stroke-opacity=".22"/>')
-        out.append(f'<polygon points="{hexagon}" fill="{tint}" fill-opacity=".18" stroke="{tint}" stroke-width="1.8"/>')
-        out.append('<path d="M-8,-62 l5,5 l11,-11" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>')
+        if cert.get("badge"):  # the issuer's official badge image, embedded so it shows inside an <img>
+            data = base64.b64encode((base / cert["badge"]).read_bytes()).decode()
+            out.append(
+                f'<image href="data:image/png;base64,{data}" x="-38" y="-108" width="76" height="76" filter="url(#shadow)"/>'
+            )
+        else:
+            out.append(f'<polygon points="{hexagon}" fill="{tint}" fill-opacity=".18" stroke="{tint}" stroke-width="1.8"/>')
+            out.append('<path d="M-8,-70 l5,5 l11,-11" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>')
         out.append(
-            f'<text x="0" y="-18" text-anchor="middle" class="kick" letter-spacing="{spacing}">{escape(kicker)}</text>'
+            f'<text x="0" y="-12" text-anchor="middle" class="kick" letter-spacing="{spacing}">{escape(kicker)}</text>'
         )
         for j, line in enumerate(lines):
             out.append(
-                f'<text x="0" y="{6 + j * (size + 4)}" text-anchor="middle" class="name" font-size="{size}">{escape(line)}</text>'
+                f'<text x="0" y="{11 + j * (size + 4)}" text-anchor="middle" class="name" font-size="{size}">{escape(line)}</text>'
             )
         out.append(
-            f'<text x="0" y="{12 + len(lines) * (size + 4)}" text-anchor="middle" class="sub">{escape(cert["issuer"])}</text>'
+            f'<text x="0" y="{17 + len(lines) * (size + 4)}" text-anchor="middle" class="sub">{escape(cert["issuer"])}</text>'
         )
         out.append(f'<text x="-68" y="102" class="meta">{escape(years)}</text>')
         out.append('<text x="68" y="102" text-anchor="end" class="meta">VERIFIED</text>')
@@ -947,7 +956,7 @@ def main() -> int:
         (args.out / f"terminal-{theme}.svg").write_text(render_terminal(summary, profile, theme))
         cert_file = args.out / f"certs-{theme}.svg"
         if certs:
-            cert_file.write_text(render_certs(certs, theme))
+            cert_file.write_text(render_certs(certs, theme, args.profile.parent))
         elif cert_file.exists():
             cert_file.unlink()
     if args.readme.exists():
