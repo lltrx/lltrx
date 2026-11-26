@@ -11,7 +11,8 @@
 
 Hey! I'm Turki 👋, an app developer based in Riyadh. I've worked on all kinds of projects across mobile and the web, and lately the Mac too. I really enjoy making apps people find useful, and when I'm not coding you'll probably catch me geeking out over the latest frameworks or whatever new technology just dropped.
 
-- 🏢 **Part of** Ajel and GCDC
+- 💳 **Part of** AjelPay, a payments platform for invoices, payment links, subscriptions and instalments
+- 🤝 **Part of** [GCDC](https://saudigcdc.com/en), the Google Developer Community in Saudi Arabia, the team behind [DevFest Riyadh 2026](https://saudigcdc.com/en/events/devfest-riyadh-2026)
 - 🛠️ **Built** Soghari and Markly, and [Shelf](https://github.com/lltrx/shelf-clipboard), a clipboard manager for macOS that never leaves your Mac
 - ☁️ **Next up:** cloud architecture
 - 🏠 **Into** homelabs, running and self-hosting my own services at home
