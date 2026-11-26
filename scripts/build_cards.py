@@ -8,7 +8,8 @@ Writes light and dark versions of:
   assets/certs-{light,dark}.svg      certifications as holographic cards (when profile.json lists any)
   assets/stats.json                  the numbers the cards were drawn from
 
-Text on the cards (tagline, terminal lines, projects, certifications) comes from profile.json.
+Text on the cards (tagline, terminal lines, projects, certifications) comes from profile.json,
+and the README's certifications section is regenerated from it (expired ones drop off).
 
 Usage:
   GITHUB_TOKEN=... python3 scripts/build_cards.py --user lltrx   # fetch from the GitHub API
@@ -781,20 +782,30 @@ def wrap(text: str, width: int) -> list[str]:
     return lines + [line] if line else lines
 
 
+def active_certs(certs: list[dict], today: str) -> list[dict]:
+    """Certifications that have not expired yet, oldest first."""
+    live = [c for c in certs if c.get("expires", "9999-12-31") >= today]
+    return sorted(live, key=lambda c: c["issued"])
+
+
 def render_certs(certs: list[dict], theme: str) -> str:
     """Certifications as holographic trading cards in a fanned row."""
     c = THEMES[theme]
     W, H = 840, 330
     n = len(certs)
-    spread = min(180, (W - 200) / max(n - 1, 1))
-    names = ", ".join(f"{x['name']} ({x['issuer']}, {x['year']})" for x in certs)
+    spread = min(186, (W - 200) / max(n - 1, 1))
+    names = "; ".join(
+        f"{x['name']}, {x['issuer']}, issued {fmt_day(x['issued'], True)}"
+        + (f", valid until {fmt_day(x['expires'], True)}" if x.get("expires") else "")
+        for x in certs
+    )
     out = svg_open(W, H, "Certifications", f"Certifications: {names}.")
     out.append(
         "<style>"
         f"text{{font-family:{FONT};fill:#fff}}"
-        ".kick{font-size:10px;font-weight:700;letter-spacing:3px;fill-opacity:.7}"
-        ".name{font-weight:700}.sub{font-size:11.5px;fill-opacity:.72}"
-        ".meta{font-size:9.5px;font-weight:600;letter-spacing:1.5px;fill-opacity:.6}"
+        ".kick{font-size:10px;font-weight:700;fill-opacity:.75}"
+        ".name{font-weight:700}.sub{font-size:11.5px;fill-opacity:.75}"
+        ".meta{font-size:9.5px;font-weight:600;letter-spacing:1px;fill-opacity:.6}"
         ".float{animation:float 5s ease-in-out infinite alternate}"
         ".holo{animation:holo 9s ease-in-out infinite alternate}"
         ".shine{animation:sweep 5.5s ease-in-out infinite}"
@@ -804,38 +815,49 @@ def render_certs(certs: list[dict], theme: str) -> str:
         "@media (prefers-reduced-motion:reduce){.float,.holo,.shine{animation:none}}"
         "</style>"
     )
-    out.append(
-        "<defs>"
+    defs = [
         f'<radialGradient id="glow"><stop offset="0" stop-color="{c["accent"]}" stop-opacity="{0.22 if theme == "dark" else 0.14}"/>'
-        f'<stop offset="1" stop-color="{c["accent"]}" stop-opacity="0"/></radialGradient>'
+        f'<stop offset="1" stop-color="{c["accent"]}" stop-opacity="0"/></radialGradient>',
         '<linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1b2338"/>'
-        '<stop offset="1" stop-color="#090c14"/></linearGradient>'
+        '<stop offset="1" stop-color="#090c14"/></linearGradient>',
         '<linearGradient id="rainbow">'
         + "".join(f'<stop offset="{i / 6:.3f}" stop-color="{col}"/>' for i, col in enumerate(HOLO))
-        + "</linearGradient>"
+        + "</linearGradient>",
         '<linearGradient id="shinefill"><stop offset="0" stop-color="#fff" stop-opacity="0"/>'
-        '<stop offset=".5" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
-        '<pattern id="dots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".7" fill="#fff" opacity=".18"/></pattern>'
-        '<clipPath id="card"><rect x="-84" y="-118" width="168" height="236" rx="14"/></clipPath>'
-        "</defs>"
-    )
+        '<stop offset=".5" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>',
+        '<pattern id="dots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".7" fill="#fff" opacity=".18"/></pattern>',
+        '<clipPath id="card"><rect x="-84" y="-118" width="168" height="236" rx="14"/></clipPath>',
+    ]
+    for i, cert in enumerate(certs):
+        tint = cert.get("color", c["accent"])
+        defs.append(
+            f'<radialGradient id="tint{i}" cx="50%" cy="0%" r="90%"><stop offset="0" stop-color="{tint}" stop-opacity=".55"/>'
+            f'<stop offset="1" stop-color="{tint}" stop-opacity="0"/></radialGradient>'
+        )
+    out.append("<defs>" + "".join(defs) + "</defs>")
     out.append(f'<ellipse cx="{W / 2}" cy="{H / 2}" rx="390" ry="145" fill="url(#glow)"/>')
     hexagon = " ".join(
-        f"{20 * math.cos(math.radians(60 * k - 90)):.1f},"
-        f"{-62 + 20 * math.sin(math.radians(60 * k - 90)):.1f}"
+        f"{20 * math.cos(math.radians(60 * k - 90)):.1f},{-62 + 20 * math.sin(math.radians(60 * k - 90)):.1f}"
         for k in range(6)
     )
     for i, cert in enumerate(certs):
+        tint = cert.get("color", c["accent"])
         offset = i - (n - 1) / 2
         cx, cy, rot = W / 2 + offset * spread, H / 2 + 4 + abs(offset) * 6, offset * 4.5
-        lines = wrap(cert["name"], 17)
-        size = 15 if len(lines) <= 2 else 13
-        lines = lines[:3]
+        lines = wrap(cert.get("title", cert["name"]), 18)[:4]
+        size = 15 if len(lines) <= 3 and max(map(len, lines)) <= 18 else 13.5
+        kicker = cert.get("kicker", "CERTIFIED")
+        spacing = 3 if len(kicker) <= 10 else 1.5
+        years = cert["issued"][:4] + (f"–{cert['expires'][:4]}" if cert.get("expires") else "")
         out.append(f'<g transform="translate({cx:.1f},{cy:.1f}) rotate({rot:.1f})">')
         out.append(f'<g class="float" style="animation-delay:-{i * 0.9:.1f}s">')
         out.append('<rect x="-84" y="-118" width="168" height="236" rx="14" fill="url(#body)"/>')
         out.append('<g clip-path="url(#card)">')
-        out.append(f'<rect class="holo" style="animation-delay:-{i * 2}s" x="-260" y="-118" width="520" height="236" fill="url(#rainbow)" opacity=".26"/>')
+        out.append(f'<rect x="-84" y="-118" width="168" height="150" fill="url(#tint{i})"/>')
+        out.append(
+            f'<rect class="holo" style="animation-delay:-{i * 2}s" x="-260" y="-118" width="520" height="236" '
+            'fill="url(#rainbow)" opacity=".22"/>'
+        )
         out.append('<rect x="-84" y="44" width="168" height="74" fill="url(#dots)"/>')
         out.append(
             f'<g transform="skewX(-18)"><rect class="shine" style="animation-delay:{1 + i * 0.35:.2f}s" '
@@ -843,17 +865,53 @@ def render_certs(certs: list[dict], theme: str) -> str:
         )
         out.append("</g>")
         out.append('<rect x="-84" y="-118" width="168" height="236" rx="14" fill="none" stroke="#fff" stroke-opacity=".22"/>')
-        out.append(f'<polygon points="{hexagon}" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="1.5"/>')
+        out.append(f'<polygon points="{hexagon}" fill="{tint}" fill-opacity=".18" stroke="{tint}" stroke-width="1.8"/>')
         out.append('<path d="M-8,-62 l5,5 l11,-11" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>')
-        out.append('<text x="0" y="-18" text-anchor="middle" class="kick">CERTIFIED</text>')
+        out.append(
+            f'<text x="0" y="-18" text-anchor="middle" class="kick" letter-spacing="{spacing}">{escape(kicker)}</text>'
+        )
         for j, line in enumerate(lines):
-            out.append(f'<text x="0" y="{6 + j * (size + 4)}" text-anchor="middle" class="name" font-size="{size}">{escape(line)}</text>')
-        out.append(f'<text x="0" y="{12 + len(lines) * (size + 4)}" text-anchor="middle" class="sub">{escape(cert["issuer"])}</text>')
-        out.append(f'<text x="-68" y="102" class="meta">{escape(str(cert["year"]))}</text>')
+            out.append(
+                f'<text x="0" y="{6 + j * (size + 4)}" text-anchor="middle" class="name" font-size="{size}">{escape(line)}</text>'
+            )
+        out.append(
+            f'<text x="0" y="{12 + len(lines) * (size + 4)}" text-anchor="middle" class="sub">{escape(cert["issuer"])}</text>'
+        )
+        out.append(f'<text x="-68" y="102" class="meta">{escape(years)}</text>')
         out.append('<text x="68" y="102" text-anchor="end" class="meta">VERIFIED</text>')
         out.append("</g></g>")
     out.append("</svg>")
     return "\n".join(out) + "\n"
+
+
+CERTS_START, CERTS_END = "<!-- certs:start", "<!-- certs:end -->"
+
+
+def update_readme_certs(readme: Path, certs: list[dict]) -> None:
+    """Rewrite the certifications block in the README so it matches profile.json."""
+    text = readme.read_text()
+    if CERTS_START not in text or CERTS_END not in text:
+        return
+    start = text.index(CERTS_START)
+    end = text.index(CERTS_END) + len(CERTS_END)
+    block = [f"{CERTS_START} (generated from profile.json by scripts/build_cards.py; edit profile.json) -->"]
+    if certs:
+        alt = "Certifications: " + "; ".join(f"{c['name']} ({c['issuer']})" for c in certs)
+        links = " · ".join(f'<a href="{escape(c["url"])}">{escape(c["name"])}</a>' for c in certs if c.get("url"))
+        block += [
+            "## Certifications",
+            "",
+            "<picture>",
+            '  <source media="(prefers-color-scheme: dark)" srcset="assets/certs-dark.svg">',
+            f'  <img src="assets/certs-light.svg" alt="{escape(alt, {chr(34): "&quot;"})}" width="100%">',
+            "</picture>",
+            "",
+            f'<p align="center"><sub>Verify on Credly: {links}</sub></p>' if links else "",
+        ]
+    block.append(CERTS_END)
+    new = text[:start] + "\n".join(line for line in block) + text[end:]
+    if new != text:
+        readme.write_text(new)
 
 
 # ---------------------------------------------------------------------------- main
@@ -865,6 +923,7 @@ def main() -> int:
     source.add_argument("--data", type=Path, help="redraw from a saved stats.json instead of fetching")
     parser.add_argument("--out", type=Path, default=Path("assets"), help="output folder (default: assets)")
     parser.add_argument("--profile", type=Path, default=Path("profile.json"), help="text shown on the cards")
+    parser.add_argument("--readme", type=Path, default=Path("README.md"), help="README whose certifications block to update")
     args = parser.parse_args()
     profile = json.loads(args.profile.read_text())
 
@@ -879,7 +938,7 @@ def main() -> int:
 
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / "stats.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n")
-    certs = profile.get("certifications", [])
+    certs = active_certs(profile.get("certifications", []), summary["updated"])
     for theme in THEMES:
         (args.out / f"stats-{theme}.svg").write_text(render_stats(summary, theme))
         (args.out / f"header-{theme}.svg").write_text(
@@ -891,6 +950,8 @@ def main() -> int:
             cert_file.write_text(render_certs(certs, theme))
         elif cert_file.exists():
             cert_file.unlink()
+    if args.readme.exists():
+        update_readme_certs(args.readme, certs)
     print(
         f"{summary['login']}: {summary['total']:,} contributions, "
         f"streak {summary['current_streak']['days']} (best {summary['longest_streak']['days']}), "

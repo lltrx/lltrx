@@ -41,6 +41,17 @@ brew install --cask lltrx/tap/shelf-clipboard
 
 Signed and notarized by Apple · [See it in action](https://github.com/lltrx/shelf-clipboard#readme) · [User guide](https://github.com/lltrx/shelf-clipboard/blob/main/docs/USER_GUIDE.md) · [Releases](https://github.com/lltrx/shelf-clipboard/releases)
 
+<!-- certs:start (generated from profile.json by scripts/build_cards.py; edit profile.json) -->
+## Certifications
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/certs-dark.svg">
+  <img src="assets/certs-light.svg" alt="Certifications: Associate Cloud Engineer (Google Cloud); AWS Certified Cloud Practitioner (Amazon Web Services); Certified Partner Specialist: Gemini Enterprise Agent Development (Google Cloud)" width="100%">
+</picture>
+
+<p align="center"><sub>Verify on Credly: <a href="https://www.credly.com/badges/1e88786b-0ee6-424d-9d8c-269f066c0f49">Associate Cloud Engineer</a> · <a href="https://www.credly.com/badges/d223cabb-a82e-4da0-b2a7-9a73c1c198ab">AWS Certified Cloud Practitioner</a> · <a href="https://www.credly.com/badges/51734f12-24ab-4155-adf5-71561e03b406">Certified Partner Specialist: Gemini Enterprise Agent Development</a></sub></p>
+<!-- certs:end -->
+
 ## Tech stack
 
 **Mobile & Mac** · Swift, SwiftUI, Flutter, React Native, Expo<br>
