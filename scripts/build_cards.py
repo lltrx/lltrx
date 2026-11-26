@@ -5,7 +5,7 @@ Writes light and dark versions of:
   assets/header-{light,dark}.svg     skyline banner: one tower per week of contributions
   assets/terminal-{light,dark}.svg   terminal that types out whoami, now, uptime and next
   assets/stats-{light,dark}.svg      contributions, streaks, monthly activity, languages
-  assets/certs-{light,dark}.svg      certifications as holographic cards (when profile.json lists any)
+  assets/certs-{light,dark}.svg      certifications as flipping holographic cards (when profile.json lists any)
   assets/stats.json                  the numbers the cards were drawn from
 
 Text on the cards (tagline, terminal lines, projects, certifications) comes from profile.json,
@@ -789,44 +789,105 @@ def active_certs(certs: list[dict], today: str) -> list[dict]:
     return sorted(live, key=lambda c: c["issued"])
 
 
+def month_year(iso: str) -> str:
+    return f"{dt.date.fromisoformat(iso):%b %Y}"
+
+
 def render_certs(certs: list[dict], theme: str, base: Path = Path(".")) -> str:
-    """Certifications as holographic trading cards in a fanned row."""
+    """Certifications as holographic cards that sway, float and take turns flipping over.
+
+    SVG inside <img> has no real 3D, so depth is faked: a visible card edge, a floor
+    shadow that shrinks as the card lifts, a badge that rises a little more than the
+    card, and a flip done with scaleX plus a perspective skew, swapping faces when the
+    card is edge-on.
+    """
     c = THEMES[theme]
-    W, H = 840, 330
+    W, H = 840, 340
     n = len(certs)
     spread = min(186, (W - 200) / max(n - 1, 1))
+    slot = 5.0                     # seconds between one card's flip and the next
+    T = max(slot * n, 8.0)         # full cycle, so only one card is ever turned over
+    pct = lambda t: f"{100 * t / T:.3f}%"  # noqa: E731
+    f0, f1 = 1.0, 5.0              # within a card's slot: flip to the back, flip to the front
     names = "; ".join(
         f"{x['name']}, {x['issuer']}, issued {fmt_day(x['issued'], True)}"
         + (f", valid until {fmt_day(x['expires'], True)}" if x.get("expires") else "")
         for x in certs
     )
+
+    def flip_frames(at: float) -> str:
+        return (
+            f"{pct(at + 0.15)}{{transform:scaleX(.5) skewY(-6deg)}}"
+            f"{pct(at + 0.3)}{{transform:scaleX(.03) skewY(-9deg)}}"
+            f"{pct(at + 0.45)}{{transform:scaleX(.5) skewY(6deg)}}"
+        )
+
+    eps = 0.01
+    css = [
+        f"text{{font-family:{FONT};fill:#fff}}",
+        ".kick{font-size:10px;font-weight:700;fill-opacity:.75}",
+        ".name{font-weight:700}.sub{font-size:11.5px;fill-opacity:.75}",
+        ".meta{font-size:9.5px;font-weight:600;letter-spacing:1px;fill-opacity:.6}",
+        ".lbl{font-size:8.5px;font-weight:700;letter-spacing:1.4px;fill-opacity:.55}",
+        ".val{font-size:12px;font-weight:600}",
+        f".id{{font-family:{MONO};font-size:11px;fill-opacity:.85}}",
+        ".float{animation:float 5s ease-in-out infinite alternate}",
+        ".pop{animation:pop 5s ease-in-out infinite alternate}",
+        ".floor{transform-box:fill-box;transform-origin:center;animation:floor 5s ease-in-out infinite alternate}",
+        ".sway{animation:sway 7s ease-in-out infinite alternate}",
+        ".holo{animation:holo 9s ease-in-out infinite alternate}",
+        ".shine{animation:sweep 5.5s ease-in-out infinite}",
+        f".flip{{animation:flip {T:g}s linear infinite}}",
+        f".front{{animation:front {T:g}s linear infinite}}",
+        f".back{{opacity:0;animation:back {T:g}s linear infinite}}",
+        f".dim{{opacity:0;animation:dim {T:g}s linear infinite}}",
+        f".edgeon{{opacity:0;animation:edgeon {T:g}s linear infinite}}",
+        "@keyframes float{to{transform:translateY(-8px)}}",
+        "@keyframes pop{to{transform:translateY(-4px)}}",
+        "@keyframes floor{to{transform:scale(.8);opacity:.55}}",
+        "@keyframes sway{from{transform:skewY(-1.8deg) scaleX(.985)}to{transform:skewY(1.8deg) scaleX(.985)}}",
+        "@keyframes holo{to{transform:translateX(176px)}}",
+        "@keyframes sweep{0%{transform:translateX(0)}30%,100%{transform:translateX(440px)}}",
+        "@keyframes flip{"
+        f"0%,{pct(f0)}{{transform:scaleX(1) skewY(0)}}{flip_frames(f0)}"
+        f"{pct(f0 + 0.6)},{pct(f1)}{{transform:scaleX(1) skewY(0)}}{flip_frames(f1)}"
+        f"{pct(f1 + 0.6)},100%{{transform:scaleX(1) skewY(0)}}}}",
+        "@keyframes front{"
+        f"0%,{pct(f0 + 0.3)}{{opacity:1}}{pct(f0 + 0.3 + eps)},{pct(f1 + 0.3)}{{opacity:0}}"
+        f"{pct(f1 + 0.3 + eps)},100%{{opacity:1}}}}",
+        "@keyframes back{"
+        f"0%,{pct(f0 + 0.3)}{{opacity:0}}{pct(f0 + 0.3 + eps)},{pct(f1 + 0.3)}{{opacity:1}}"
+        f"{pct(f1 + 0.3 + eps)},100%{{opacity:0}}}}",
+        "@keyframes dim{"
+        f"0%,{pct(f0)},{pct(f0 + 0.6)},{pct(f1)},{pct(f1 + 0.6)},100%{{opacity:0}}"
+        f"{pct(f0 + 0.3)},{pct(f1 + 0.3)}{{opacity:.6}}}}",
+        "@keyframes edgeon{"
+        f"0%,{pct(f0 + 0.18)},{pct(f0 + 0.42)},{pct(f1 + 0.18)},{pct(f1 + 0.42)},100%{{opacity:0}}"
+        f"{pct(f0 + 0.3)},{pct(f1 + 0.3)}{{opacity:1}}}}",
+        "@media (prefers-reduced-motion:reduce){.float,.pop,.floor,.sway,.holo,.shine,.flip,.front,.back,.dim,.edgeon"
+        "{animation:none}}",
+    ]
     out = svg_open(W, H, "Certifications", f"Certifications: {names}.")
-    out.append(
-        "<style>"
-        f"text{{font-family:{FONT};fill:#fff}}"
-        ".kick{font-size:10px;font-weight:700;fill-opacity:.75}"
-        ".name{font-weight:700}.sub{font-size:11.5px;fill-opacity:.75}"
-        ".meta{font-size:9.5px;font-weight:600;letter-spacing:1px;fill-opacity:.6}"
-        ".float{animation:float 5s ease-in-out infinite alternate}"
-        ".holo{animation:holo 9s ease-in-out infinite alternate}"
-        ".shine{animation:sweep 5.5s ease-in-out infinite}"
-        "@keyframes float{to{transform:translateY(-7px)}}"
-        "@keyframes holo{to{transform:translateX(176px)}}"
-        "@keyframes sweep{0%{transform:translateX(0)}30%,100%{transform:translateX(440px)}}"
-        "@media (prefers-reduced-motion:reduce){.float,.holo,.shine{animation:none}}"
-        "</style>"
-    )
+    out.append("<style>" + "".join(css) + "</style>")
     defs = [
         f'<radialGradient id="glow"><stop offset="0" stop-color="{c["accent"]}" stop-opacity="{0.22 if theme == "dark" else 0.14}"/>'
         f'<stop offset="1" stop-color="{c["accent"]}" stop-opacity="0"/></radialGradient>',
+        f'<radialGradient id="floorfill"><stop offset="0" stop-color="#000" stop-opacity="{0.55 if theme == "dark" else 0.28}"/>'
+        '<stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>',
         '<linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1b2338"/>'
         '<stop offset="1" stop-color="#090c14"/></linearGradient>',
+        '<linearGradient id="backbody" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#202a42"/>'
+        '<stop offset="1" stop-color="#0a0d16"/></linearGradient>',
         '<linearGradient id="rainbow">'
         + "".join(f'<stop offset="{i / 6:.3f}" stop-color="{col}"/>' for i, col in enumerate(HOLO))
         + "</linearGradient>",
         '<linearGradient id="shinefill"><stop offset="0" stop-color="#fff" stop-opacity="0"/>'
         '<stop offset=".5" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>',
+        '<linearGradient id="edgefill" x1="0" x2="1"><stop offset="0" stop-color="#3a4560"/>'
+        '<stop offset=".5" stop-color="#c9d4ff"/><stop offset="1" stop-color="#3a4560"/></linearGradient>',
         '<pattern id="dots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".7" fill="#fff" opacity=".18"/></pattern>',
+        '<pattern id="lines" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
+        '<line x1="0" y1="0" x2="0" y2="7" stroke="#fff" stroke-opacity=".06" stroke-width="2"/></pattern>',
         '<clipPath id="card"><rect x="-84" y="-118" width="168" height="236" rx="14"/></clipPath>',
         '<filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">'
         '<feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity=".45"/></filter>',
@@ -836,59 +897,109 @@ def render_certs(certs: list[dict], theme: str, base: Path = Path(".")) -> str:
         defs.append(
             f'<radialGradient id="tint{i}" cx="50%" cy="0%" r="90%"><stop offset="0" stop-color="{tint}" stop-opacity=".55"/>'
             f'<stop offset="1" stop-color="{tint}" stop-opacity="0"/></radialGradient>'
+            f'<radialGradient id="tintb{i}" cx="100%" cy="100%" r="100%"><stop offset="0" stop-color="{tint}" stop-opacity=".45"/>'
+            f'<stop offset="1" stop-color="{tint}" stop-opacity="0"/></radialGradient>'
         )
     out.append("<defs>" + "".join(defs) + "</defs>")
-    out.append(f'<ellipse cx="{W / 2}" cy="{H / 2}" rx="390" ry="145" fill="url(#glow)"/>')
+    out.append(f'<ellipse cx="{W / 2}" cy="{H / 2 - 6}" rx="390" ry="145" fill="url(#glow)"/>')
     hexagon = " ".join(
         f"{20 * math.cos(math.radians(60 * k - 90)):.1f},{-70 + 20 * math.sin(math.radians(60 * k - 90)):.1f}"
         for k in range(6)
     )
+
+    def badge(cert: dict, x: float, y: float, size: float, cls: str = "") -> str:
+        if not cert.get("badge"):
+            return ""
+        data = base64.b64encode((base / cert["badge"]).read_bytes()).decode()
+        klass = f' class="{cls}"' if cls else ""
+        return (f'<image{klass} href="data:image/png;base64,{data}" x="{x}" y="{y}" width="{size}" height="{size}" '
+                'filter="url(#shadow)"/>')
+
     for i, cert in enumerate(certs):
         tint = cert.get("color", c["accent"])
         offset = i - (n - 1) / 2
-        cx, cy, rot = W / 2 + offset * spread, H / 2 + 4 + abs(offset) * 6, offset * 4.5
+        cx, cy, rot = W / 2 + offset * spread, H / 2 - 4 + abs(offset) * 6, offset * 4.5
         lines = wrap(cert.get("title", cert["name"]), 18)[:4]
         size = 15 if len(lines) <= 3 and max(map(len, lines)) <= 18 else 13.5
         kicker = cert.get("kicker", "CERTIFIED")
         spacing = 3 if len(kicker) <= 10 else 1.5
         years = cert["issued"][:4] + (f"–{cert['expires'][:4]}" if cert.get("expires") else "")
+        delay = f"animation-delay:{i * slot:g}s"
+        bob = f"animation-delay:-{i * 0.9:.1f}s"
         out.append(f'<g transform="translate({cx:.1f},{cy:.1f}) rotate({rot:.1f})">')
-        out.append(f'<g class="float" style="animation-delay:-{i * 0.9:.1f}s">')
+        out.append(f'<ellipse class="floor" style="{bob}" cx="0" cy="136" rx="74" ry="10" fill="url(#floorfill)"/>')
+        out.append(f'<g class="float" style="{bob}"><g class="sway" style="animation-delay:-{i * 2.3:.1f}s">')
+        out.append(f'<g class="flip" style="{delay}">')
+        # thickness: the card's edge peeks out below and to the right
+        out.append('<rect x="-80.5" y="-114.5" width="168" height="236" rx="14" fill="#04060b" stroke="#fff" stroke-opacity=".12"/>')
+
+        # ---- front
+        out.append(f'<g class="front" style="{delay}">')
         out.append('<rect x="-84" y="-118" width="168" height="236" rx="14" fill="url(#body)"/>')
         out.append('<g clip-path="url(#card)">')
         out.append(f'<rect x="-84" y="-118" width="168" height="150" fill="url(#tint{i})"/>')
-        out.append(
-            f'<rect class="holo" style="animation-delay:-{i * 2}s" x="-260" y="-118" width="520" height="236" '
-            'fill="url(#rainbow)" opacity=".22"/>'
-        )
+        out.append(f'<rect class="holo" style="animation-delay:-{i * 2}s" x="-260" y="-118" width="520" height="236" '
+                   'fill="url(#rainbow)" opacity=".22"/>')
         out.append('<rect x="-84" y="44" width="168" height="74" fill="url(#dots)"/>')
-        out.append(
-            f'<g transform="skewX(-18)"><rect class="shine" style="animation-delay:{1 + i * 0.35:.2f}s" '
-            'x="-200" y="-118" width="60" height="236" fill="url(#shinefill)"/></g>'
-        )
+        out.append(f'<g transform="skewX(-18)"><rect class="shine" style="animation-delay:{1 + i * 0.35:.2f}s" '
+                   'x="-200" y="-118" width="60" height="236" fill="url(#shinefill)"/></g>')
         out.append("</g>")
         out.append('<rect x="-84" y="-118" width="168" height="236" rx="14" fill="none" stroke="#fff" stroke-opacity=".22"/>')
-        if cert.get("badge"):  # the issuer's official badge image, embedded so it shows inside an <img>
-            data = base64.b64encode((base / cert["badge"]).read_bytes()).decode()
-            out.append(
-                f'<image href="data:image/png;base64,{data}" x="-38" y="-108" width="76" height="76" filter="url(#shadow)"/>'
-            )
+        if cert.get("badge"):
+            out.append(f'<g class="pop" style="{bob}">{badge(cert, -38, -108, 76)}</g>')
         else:
             out.append(f'<polygon points="{hexagon}" fill="{tint}" fill-opacity=".18" stroke="{tint}" stroke-width="1.8"/>')
             out.append('<path d="M-8,-70 l5,5 l11,-11" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>')
-        out.append(
-            f'<text x="0" y="-12" text-anchor="middle" class="kick" letter-spacing="{spacing}">{escape(kicker)}</text>'
-        )
+        out.append(f'<text x="0" y="-12" text-anchor="middle" class="kick" letter-spacing="{spacing}">{escape(kicker)}</text>')
         for j, line in enumerate(lines):
-            out.append(
-                f'<text x="0" y="{11 + j * (size + 4)}" text-anchor="middle" class="name" font-size="{size}">{escape(line)}</text>'
-            )
-        out.append(
-            f'<text x="0" y="{17 + len(lines) * (size + 4)}" text-anchor="middle" class="sub">{escape(cert["issuer"])}</text>'
-        )
+            out.append(f'<text x="0" y="{11 + j * (size + 4)}" text-anchor="middle" class="name" font-size="{size}">{escape(line)}</text>')
+        out.append(f'<text x="0" y="{17 + len(lines) * (size + 4)}" text-anchor="middle" class="sub">{escape(cert["issuer"])}</text>')
         out.append(f'<text x="-68" y="102" class="meta">{escape(years)}</text>')
         out.append('<text x="68" y="102" text-anchor="end" class="meta">VERIFIED</text>')
-        out.append("</g></g>")
+        out.append("</g>")
+
+        # ---- back: the credential details
+        cred = cert.get("url", "").rstrip("/").rsplit("/", 1)[-1]
+        out.append(f'<g class="back" style="{delay}">')
+        out.append('<rect x="-84" y="-118" width="168" height="236" rx="14" fill="url(#backbody)"/>')
+        out.append('<g clip-path="url(#card)">')
+        out.append(f'<rect x="-84" y="-118" width="168" height="236" fill="url(#tintb{i})"/>')
+        out.append('<rect x="-84" y="-118" width="168" height="236" fill="url(#lines)"/>')
+        out.append(f'<rect class="holo" style="animation-delay:-{i * 2 + 3}s" x="-260" y="-118" width="520" height="236" '
+                   'fill="url(#rainbow)" opacity=".14"/>')
+        out.append("</g>")
+        out.append('<rect x="-84" y="-118" width="168" height="236" rx="14" fill="none" stroke="#fff" stroke-opacity=".22"/>')
+        if cert.get("badge"):
+            out.append(badge(cert, -70, -106, 34))
+            tx = -28
+        else:
+            tx = -68
+        issuer_lines = wrap(cert["issuer"], 14)[:2]
+        for j, line in enumerate(issuer_lines):
+            y = -85 - 6.5 * (len(issuer_lines) - 1) + 13 * j
+            out.append(f'<text x="{tx}" y="{y:.1f}" class="sub" style="font-size:11px;font-weight:600">{escape(line)}</text>')
+        full = wrap(cert["name"], 21)[:4]
+        for j, line in enumerate(full):
+            out.append(f'<text x="-68" y="{-50 + j * 15}" class="name" font-size="12.5">{escape(line)}</text>')
+        out.append('<text x="-68" y="16" class="lbl">ISSUED</text>')
+        out.append(f'<text x="-68" y="32" class="val">{escape(month_year(cert["issued"]))}</text>')
+        if cert.get("expires"):
+            out.append('<text x="10" y="16" class="lbl">EXPIRES</text>')
+            out.append(f'<text x="10" y="32" class="val">{escape(month_year(cert["expires"]))}</text>')
+        if cred:
+            out.append('<text x="-68" y="56" class="lbl">CREDENTIAL ID</text>')
+            out.append(f'<text x="-68" y="72" class="id">{escape(cred[:13])}…</text>')
+        out.append('<line x1="-68" y1="84" x2="68" y2="84" stroke="#fff" stroke-opacity=".15"/>')
+        out.append('<text x="-68" y="103" class="meta">VERIFY ON CREDLY ↗</text>')
+        out.append('<circle cx="64" cy="99" r="9" fill="url(#rainbow)" opacity=".8"/>')
+        out.append('<circle cx="64" cy="99" r="9" fill="none" stroke="#fff" stroke-opacity=".5"/>')
+        out.append("</g>")
+
+        # darkening as the card turns away, and its thin edge when it is side-on
+        out.append(f'<rect class="dim" style="{delay}" x="-84" y="-118" width="168" height="236" rx="14" fill="#000"/>')
+        out.append("</g>")
+        out.append(f'<rect class="edgeon" style="{delay}" x="-2.5" y="-118" width="5" height="236" rx="2.5" fill="url(#edgefill)"/>')
+        out.append("</g></g></g>")
     out.append("</svg>")
     return "\n".join(out) + "\n"
 
