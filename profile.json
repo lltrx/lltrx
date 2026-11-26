@@ -1,0 +1,15 @@
+{
+  "tagline": ["mobile", "the web", "the Mac"],
+  "subtitle": "App developer · Riyadh, Saudi Arabia",
+  "terminal": {
+    "host": "turki@riyadh",
+    "whoami": "app developer · Riyadh, Saudi Arabia",
+    "now": [
+      ["AjelPay", "payments platform"],
+      ["GCDC", "built the community portal"],
+      ["Shelf", "clipboard manager for macOS"]
+    ],
+    "next": "cloud architecture"
+  },
+  "certifications": []
+}

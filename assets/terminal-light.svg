@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="333" viewBox="0 0 840 333" role="img" aria-labelledby="t d">
+<title id="t">Turki Faisal in a terminal</title>
+<desc id="d">$ whoami Turki Faisal · app developer · Riyadh, Saudi Arabia $ cat now.md • AjelPay   payments platform • GCDC      built the community portal • Shelf     clipboard manager for macOS $ uptime streak 25 days · best 35 · 7,845 contributions in 2026 $ next cloud architecture</desc>
+<style>text{font-family:ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;font-size:14px;fill:#59636e}.title{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;font-size:12px;fill:#59636e}.prompt{fill:#1a7f37}.dir{fill:#1b7c83}.cmd{fill:#1f2328}.out{fill:#59636e}.dim{fill:#8c959f}.num{fill:#9a6700}.hl{fill:#0550ae;font-weight:600}.hl2{fill:#8250df;font-weight:600}.line{animation:show .05s linear backwards}.type{transform-box:fill-box;transform-origin:left center;animation:typing 1s backwards}.cursor{animation:show .05s linear backwards,blink 1s steps(1) infinite}@keyframes show{from{opacity:0}to{opacity:1}}@keyframes typing{from{transform:scaleX(0)}to{transform:scaleX(1)}}@keyframes blink{0%{fill-opacity:1}50%{fill-opacity:0}}@media (prefers-reduced-motion:reduce){.line,.type,.cursor{animation:none}}</style>
+<defs><clipPath id="c0"><rect class="type" x="62" y="61" width="57" height="24" style="animation-duration:0.33s;animation-delay:0.75s;animation-timing-function:steps(6)"/></clipPath><clipPath id="c2"><rect class="type" x="62" y="111" width="90" height="24" style="animation-duration:0.55s;animation-delay:1.80s;animation-timing-function:steps(10)"/></clipPath><clipPath id="c6"><rect class="type" x="62" y="211" width="57" height="24" style="animation-duration:0.33s;animation-delay:3.31s;animation-timing-function:steps(6)"/></clipPath><clipPath id="c8"><rect class="type" x="62" y="261" width="40" height="24" style="animation-duration:0.22s;animation-delay:4.36s;animation-timing-function:steps(4)"/></clipPath></defs>
+<rect x="0.5" y="0.5" width="839" height="332" rx="12" fill="#ffffff" stroke="#d1d9e0"/>
+<path d="M0.5,12.5 a12,12 0 0 1 12,-12 h815 a12,12 0 0 1 12,12 v24 h-839z" fill="#f6f8fa"/>
+<line x1="0.5" y1="36.5" x2="839.5" y2="36.5" stroke="#d1d9e0"/>
+<circle cx="22" cy="18.5" r="6" fill="#ff5f57"/>
+<circle cx="42" cy="18.5" r="6" fill="#febc2e"/>
+<circle cx="62" cy="18.5" r="6" fill="#28c840"/>
+<text x="420.0" y="23" text-anchor="middle" class="title">turki@riyadh: ~</text>
+<g class="line" style="animation-delay:0.40s"><text x="24" y="78"><tspan class="prompt">$</tspan> <tspan class="dir">~</tspan></text><text x="62" y="78" class="cmd" clip-path="url(#c0)">whoami</text></g>
+<text x="24" y="103" class="line" style="animation-delay:1.33s;white-space:pre" xml:space="preserve"><tspan class="hl">Turki Faisal</tspan><tspan class="out"> · app developer · Riyadh, Saudi Arabia</tspan></text>
+<g class="line" style="animation-delay:1.45s"><text x="24" y="128"><tspan class="prompt">$</tspan> <tspan class="dir">~</tspan></text><text x="62" y="128" class="cmd" clip-path="url(#c2)">cat now.md</text></g>
+<text x="24" y="153" class="line" style="animation-delay:2.60s;white-space:pre" xml:space="preserve"><tspan class="dim">• </tspan><tspan class="hl">AjelPay   </tspan><tspan class="out">payments platform</tspan></text>
+<text x="24" y="178" class="line" style="animation-delay:2.72s;white-space:pre" xml:space="preserve"><tspan class="dim">• </tspan><tspan class="hl">GCDC      </tspan><tspan class="out">built the community portal</tspan></text>
+<text x="24" y="203" class="line" style="animation-delay:2.84s;white-space:pre" xml:space="preserve"><tspan class="dim">• </tspan><tspan class="hl">Shelf     </tspan><tspan class="out">clipboard manager for macOS</tspan></text>
+<g class="line" style="animation-delay:2.96s"><text x="24" y="228"><tspan class="prompt">$</tspan> <tspan class="dir">~</tspan></text><text x="62" y="228" class="cmd" clip-path="url(#c6)">uptime</text></g>
+<text x="24" y="253" class="line" style="animation-delay:3.89s;white-space:pre" xml:space="preserve"><tspan class="out">streak </tspan><tspan class="num">25 days</tspan><tspan class="out"> · best </tspan><tspan class="num">35</tspan><tspan class="out"> · </tspan><tspan class="num">7,845</tspan><tspan class="out"> contributions in 2026</tspan></text>
+<g class="line" style="animation-delay:4.01s"><text x="24" y="278"><tspan class="prompt">$</tspan> <tspan class="dir">~</tspan></text><text x="62" y="278" class="cmd" clip-path="url(#c8)">next</text></g>
+<text x="24" y="303" class="line" style="animation-delay:4.83s;white-space:pre" xml:space="preserve"><tspan class="hl2">cloud architecture</tspan></text>
+<rect class="cursor" style="animation-delay:4.95s,4.95s" x="185" y="288" width="9" height="19" fill="#0969da"/>
+</svg>

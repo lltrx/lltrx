@@ -2,9 +2,14 @@
 """Build the SVG cards shown on the profile README.
 
 Writes light and dark versions of:
-  assets/header-{light,dark}.svg   the banner at the top
-  assets/stats-{light,dark}.svg    contributions, streaks, monthly activity, languages
-  assets/stats.json                the numbers the stats card was drawn from
+  assets/header-{light,dark}.svg     skyline banner: one tower per week of contributions
+  assets/terminal-{light,dark}.svg   terminal that types out whoami, now, uptime and next
+  assets/vitals-{light,dark}.svg     heart monitor of the last 60 days
+  assets/stats-{light,dark}.svg      contributions, streaks, monthly activity, languages
+  assets/certs-{light,dark}.svg      certifications as holographic cards (when profile.json lists any)
+  assets/stats.json                  the numbers the cards were drawn from
+
+Text on the cards (tagline, terminal lines, certifications) comes from profile.json.
 
 Usage:
   GITHUB_TOKEN=... python3 scripts/build_cards.py --user lltrx   # fetch from the GitHub API
@@ -18,6 +23,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import math
 import os
 import random
 import sys
@@ -30,6 +36,7 @@ API = "https://api.github.com/graphql"
 TOP_LANGUAGES = 6  # the rest fold into "Other"
 
 FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif'
+MONO = 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace'
 
 # Surfaces and inks follow GitHub's own light and dark themes so the cards sit
 # naturally on the profile page. Series colors are a fixed categorical order,
@@ -226,6 +233,10 @@ def summarize(raw: dict, today: dt.date) -> dict:
         "per_year": dict(sorted(per_year.items())),
         "months": [[k, per_month.get(k, 0)] for k in months],
         "weeks": weekly_totals(days, today),
+        "last_60_days": [
+            [d.isoformat(), days.get(d.isoformat(), 0)]
+            for d in (today - dt.timedelta(days=59 - k) for k in range(60))
+        ],
         "current_streak": current,
         "longest_streak": longest,
         "languages": languages,
@@ -668,6 +679,289 @@ def render_header(theme: str, s: dict, words: list[str], subtitle: str) -> str:
     return "\n".join(out) + "\n"
 
 
+# --------------------------------------------------------------------- terminal card
+
+TERMINAL = {
+    "dark": {"bg": "#0d1117", "bar": "#161b22", "border": "#30363d", "title": "#9198a1", "prompt": "#3fb950",
+             "dir": "#39c5cf", "cmd": "#e6edf3", "out": "#9198a1", "dim": "#6e7681", "hl": "#79c0ff",
+             "hl2": "#d2a8ff", "num": "#e3b341", "cursor": "#58a6ff"},
+    "light": {"bg": "#ffffff", "bar": "#f6f8fa", "border": "#d1d9e0", "title": "#59636e", "prompt": "#1a7f37",
+              "dir": "#1b7c83", "cmd": "#1f2328", "out": "#59636e", "dim": "#8c959f", "hl": "#0550ae",
+              "hl2": "#8250df", "num": "#9a6700", "cursor": "#0969da"},
+}
+CHAR_W = 8.45  # approximate advance of a 14px monospace glyph
+
+
+def render_terminal(s: dict, profile: dict, theme: str) -> str:
+    """A terminal that types out whoami, now, uptime (live numbers) and next."""
+    k, term = TERMINAL[theme], profile["terminal"]
+    cur, best = s["current_streak"]["days"], s["longest_streak"]["days"]
+    today = dt.date.fromisoformat(s["updated"])
+    pad = max(len(name) for name, _ in term["now"]) + 3
+    lines = [("cmd", "whoami"), ("out", [("hl", s["name"]), ("out", f" · {term['whoami']}")]), ("cmd", "cat now.md")]
+    lines += [("out", [("dim", "• "), ("hl", name.ljust(pad)), ("out", what)]) for name, what in term["now"]]
+    lines += [
+        ("cmd", "uptime"),
+        ("out", [("out", "streak "), ("num", f"{cur} day" + ("" if cur == 1 else "s")), ("out", " · best "),
+                 ("num", str(best)), ("out", " · "), ("num", f"{s['this_year']:,}"),
+                 ("out", f" contributions in {today.year}")]),
+        ("cmd", "next"),
+        ("out", [("hl2", term["next"])]),
+    ]
+    W, top, step = 840, 78, 25
+    H = top + step * (len(lines) - 1) + 30
+    desc = " ".join(
+        (f"$ {c}" if kind == "cmd" else "".join(text for _, text in c)) for kind, c in lines
+    )
+    out = svg_open(W, H, f"{s['name']} in a terminal", desc)
+    out.append(
+        "<style>"
+        f"text{{font-family:{MONO};font-size:14px;fill:{k['out']}}}"
+        f".title{{font-family:{FONT};font-size:12px;fill:{k['title']}}}"
+        + "".join(f".{name}{{fill:{k[name]}}}" for name in ("prompt", "dir", "cmd", "out", "dim", "num"))
+        + f".hl{{fill:{k['hl']};font-weight:600}}.hl2{{fill:{k['hl2']};font-weight:600}}"
+        ".line{animation:show .05s linear backwards}"
+        ".type{transform-box:fill-box;transform-origin:left center;animation:typing 1s backwards}"
+        ".cursor{animation:show .05s linear backwards,blink 1s steps(1) infinite}"
+        "@keyframes show{from{opacity:0}to{opacity:1}}"
+        "@keyframes typing{from{transform:scaleX(0)}to{transform:scaleX(1)}}"
+        "@keyframes blink{0%{fill-opacity:1}50%{fill-opacity:0}}"
+        "@media (prefers-reduced-motion:reduce){.line,.type,.cursor{animation:none}}"
+        "</style>"
+    )
+    t, y, clips, body = 0.4, top, [], []
+    for i, (kind, content) in enumerate(lines):
+        if kind == "cmd":
+            n, dur = len(content), 0.055 * len(content)
+            clips.append(
+                f'<clipPath id="c{i}"><rect class="type" x="62" y="{y - 17}" width="{n * CHAR_W + 6:.0f}" height="24" '
+                f'style="animation-duration:{dur:.2f}s;animation-delay:{t + 0.35:.2f}s;'
+                f'animation-timing-function:steps({n})"/></clipPath>'
+            )
+            body.append(
+                f'<g class="line" style="animation-delay:{t:.2f}s">'
+                f'<text x="24" y="{y}"><tspan class="prompt">$</tspan> <tspan class="dir">~</tspan></text>'
+                f'<text x="62" y="{y}" class="cmd" clip-path="url(#c{i})">{escape(content)}</text></g>'
+            )
+            t += 0.35 + dur + 0.25
+        else:
+            spans = "".join(f'<tspan class="{cls}">{escape(text)}</tspan>' for cls, text in content)
+            body.append(
+                f'<text x="24" y="{y}" class="line" style="animation-delay:{t:.2f}s;white-space:pre" '
+                f'xml:space="preserve">{spans}</text>'
+            )
+            t += 0.12
+        y += step
+    last_len = sum(len(text) for _, text in lines[-1][1])
+    out.append("<defs>" + "".join(clips) + "</defs>")
+    out.append(f'<rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="12" fill="{k["bg"]}" stroke="{k["border"]}"/>')
+    out.append(f'<path d="M0.5,12.5 a12,12 0 0 1 12,-12 h{W - 25} a12,12 0 0 1 12,12 v24 h-{W - 1}z" fill="{k["bar"]}"/>')
+    out.append(f'<line x1="0.5" y1="36.5" x2="{W - 0.5}" y2="36.5" stroke="{k["border"]}"/>')
+    for i, color in enumerate(("#ff5f57", "#febc2e", "#28c840")):
+        out.append(f'<circle cx="{22 + i * 20}" cy="18.5" r="6" fill="{color}"/>')
+    out.append(f'<text x="{W / 2}" y="23" text-anchor="middle" class="title">{escape(term["host"])}: ~</text>')
+    out += body
+    out.append(
+        f'<rect class="cursor" style="animation-delay:{t:.2f}s,{t:.2f}s" x="{24 + CHAR_W * (last_len + 1):.0f}" '
+        f'y="{y - step - 15}" width="9" height="19" fill="{k["cursor"]}"/>'
+    )
+    out.append("</svg>")
+    return "\n".join(out) + "\n"
+
+
+# --------------------------------------------------------------------- vital signs card
+
+VITALS = {
+    "dark": {"case": "#0b0f14", "case_edge": "#21262d", "label": "#8b949e"},
+    "light": {"case": "#e9edf1", "case_edge": "#d1d9e0", "label": "#59636e"},
+}
+
+
+def render_vitals(s: dict, theme: str) -> str:
+    """A heart monitor: one beat per day for the last 60 days, plus four readouts."""
+    k = VITALS[theme]
+    days = s["last_60_days"]
+    counts = [n for _, n in days]
+    peak_i = max(range(len(counts)), key=lambda i: counts[i])
+    peak = counts[peak_i] or 1
+    avg30 = round(sum(counts[-30:]) / 30)
+    W, H = 840, 270
+    left, right, base = 36, 600, 166
+    dx = (right - left) / len(counts)
+    pts, x = [(left, base)], left
+    for n in counts:
+        if n:
+            r = 10 + 90 * (n / peak) ** 0.6
+            pts += [(x + dx * .18, base), (x + dx * .26, base - 4), (x + dx * .34, base), (x + dx * .42, base + 6),
+                    (x + dx * .5, base - r), (x + dx * .58, base + 11), (x + dx * .66, base),
+                    (x + dx * .8, base - 6), (x + dx * .9, base)]
+        pts.append((x + dx, base))
+        x += dx
+    length = sum(((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) ** 0.5 for a, b in zip(pts, pts[1:]))
+    d = "M" + " L".join(f"{a:.1f},{b:.1f}" for a, b in pts)
+    first, last = dt.date.fromisoformat(days[0][0]), dt.date.fromisoformat(days[-1][0])
+    peak_day = dt.date.fromisoformat(days[peak_i][0])
+    readouts = [
+        ("PULSE", str(avg30), "/day", "30-day avg", "#56d364", 648, 70),
+        ("STREAK", str(s["current_streak"]["days"]), "d", "current", "#e3b341", 742, 70),
+        ("PEAK", f"{counts[peak_i]:,}", "", f"{peak_day:%b} {peak_day.day}", "#39c5cf", 648, 170),
+        ("RECORD", str(s["longest_streak"]["days"]), "d", "longest", "#d2a8ff", 742, 170),
+    ]
+    desc = (
+        f"Heart monitor of daily GitHub contributions from {fmt_day(days[0][0], True)} to {fmt_day(days[-1][0], True)}: "
+        f"one beat per day, flat on days off. Pulse {avg30} contributions a day over 30 days, "
+        f"current streak {s['current_streak']['days']} days, peak day {counts[peak_i]} on {fmt_day(days[peak_i][0], True)}, "
+        f"longest streak {s['longest_streak']['days']} days."
+    )
+    out = svg_open(W, H, "Vital signs", desc)
+    out.append(
+        "<style>"
+        f"text{{font-family:{MONO}}}"
+        ".head{font-size:13px;font-weight:700;letter-spacing:3px;fill:#56d364}"
+        ".dim{font-size:11px;fill:#6e8b77}.lbl{font-size:11px;font-weight:700;letter-spacing:2px}"
+        ".big{font-size:36px;font-weight:700}.unit{font-size:13px;font-weight:500;fill:#6e8b77}"
+        f".trace{{animation:draw 7s linear infinite}}"
+        f"@keyframes draw{{0%{{stroke-dashoffset:{length:.0f}}}85%,100%{{stroke-dashoffset:0}}}}"
+        ".dot{offset-distance:100%;offset-rotate:0deg;animation:dot 7s linear infinite}"
+        "@keyframes dot{0%{offset-distance:0%}85%,100%{offset-distance:100%}}"
+        ".heart{transform-box:fill-box;transform-origin:center;animation:beat 1.05s ease-in-out infinite}"
+        "@keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.28)}30%{transform:scale(1)}45%{transform:scale(1.12)}}"
+        "@media (prefers-reduced-motion:reduce){.trace,.dot,.heart{animation:none}}"
+        "</style>"
+    )
+    out.append(
+        "<defs>"
+        '<pattern id="g1" width="12" height="12" patternUnits="userSpaceOnUse">'
+        '<path d="M12,0 V12 H0" fill="none" stroke="#2ea043" stroke-opacity=".10"/></pattern>'
+        '<pattern id="g5" width="60" height="60" patternUnits="userSpaceOnUse">'
+        '<path d="M60,0 V60 H0" fill="none" stroke="#2ea043" stroke-opacity=".22"/></pattern>'
+        "</defs>"
+    )
+    out.append(f'<rect x="0.5" y="0.5" width="{W - 1}" height="{H - 1}" rx="16" fill="{k["case"]}" stroke="{k["case_edge"]}"/>')
+    out.append('<rect x="16" y="16" width="602" height="238" rx="9" fill="#03140b" stroke="#12301e"/>')
+    out.append('<rect x="16" y="16" width="602" height="238" fill="url(#g1)"/>')
+    out.append('<rect x="16" y="16" width="602" height="238" fill="url(#g5)"/>')
+    out.append('<rect x="630" y="16" width="194" height="238" rx="9" fill="#05090d" stroke="#1a2430"/>')
+    out.append('<line x1="640" y1="146" x2="814" y2="146" stroke="#1a2430"/>')
+    out.append('<line x1="727" y1="26" x2="727" y2="244" stroke="#1a2430"/>')
+    out.append('<text x="32" y="42" class="head">VITALS</text>')
+    out.append(f'<text x="118" y="42" class="dim">{escape(s["login"])} · last 60 days</text>')
+    out.append('<path class="heart" d="M560,36 c-3,-5 -11,-4 -11,2 c0,5 11,11 11,11 c0,0 11,-6 11,-11 c0,-6 -8,-7 -11,-2z" fill="#f85149"/>')
+    out.append('<text x="578" y="45" class="dim">LIVE</text>')
+    # The previous sweep stays on screen, dimmed; the bright trace redraws over it.
+    out.append(f'<path d="{d}" fill="none" stroke="#3fb950" stroke-opacity=".38" stroke-width="1.6" stroke-linejoin="round"/>')
+    for width, color, opacity in ((6, "#3fb950", 0.25), (1.8, "#56d364", 1)):
+        out.append(
+            f'<path class="trace" d="{d}" fill="none" stroke="{color}" stroke-opacity="{opacity}" stroke-width="{width}" '
+            f'stroke-linejoin="round" style="stroke-dasharray:{length:.0f}"/>'
+        )
+    out.append(f'<circle class="dot" r="3.5" fill="#d2ffd8" style="offset-path:path(\'{d}\')"/>')
+    out.append(
+        f'<text x="32" y="240" class="dim">{first:%b} {first.day} – {last:%b} {last.day} · one beat per day · '
+        "taller beat = more contributions · flat = day off</text>"
+    )
+    for label, value, unit, sub, color, x, y in readouts:
+        unit_span = f'<tspan class="unit" dx="4">{unit}</tspan>' if unit else ""
+        out.append(
+            f'<text x="{x}" y="{y}" class="lbl" fill="{color}">{label}</text>'
+            f'<text x="{x}" y="{y + 40}" class="big" fill="{color}">{value}{unit_span}</text>'
+            f'<text x="{x}" y="{y + 60}" class="dim">{escape(sub)}</text>'
+        )
+    out.append("</svg>")
+    return "\n".join(out) + "\n"
+
+
+# ------------------------------------------------------------------ certification cards
+
+HOLO = ["#ff6ec7", "#7afcff", "#fdff8f", "#8affb0", "#a58bff", "#ff6ec7", "#7afcff"]
+
+
+def wrap(text: str, width: int) -> list[str]:
+    lines, line = [], ""
+    for word in text.split():
+        if line and len(line) + 1 + len(word) > width:
+            lines.append(line)
+            line = word
+        else:
+            line = f"{line} {word}".strip()
+    return lines + [line] if line else lines
+
+
+def render_certs(certs: list[dict], theme: str) -> str:
+    """Certifications as holographic trading cards in a fanned row."""
+    c = THEMES[theme]
+    W, H = 840, 330
+    n = len(certs)
+    spread = min(180, (W - 200) / max(n - 1, 1))
+    names = ", ".join(f"{x['name']} ({x['issuer']}, {x['year']})" for x in certs)
+    out = svg_open(W, H, "Certifications", f"Certifications: {names}.")
+    out.append(
+        "<style>"
+        f"text{{font-family:{FONT};fill:#fff}}"
+        ".kick{font-size:10px;font-weight:700;letter-spacing:3px;fill-opacity:.7}"
+        ".name{font-weight:700}.sub{font-size:11.5px;fill-opacity:.72}"
+        ".meta{font-size:9.5px;font-weight:600;letter-spacing:1.5px;fill-opacity:.6}"
+        ".float{animation:float 5s ease-in-out infinite alternate}"
+        ".holo{animation:holo 9s ease-in-out infinite alternate}"
+        ".shine{animation:sweep 5.5s ease-in-out infinite}"
+        "@keyframes float{to{transform:translateY(-7px)}}"
+        "@keyframes holo{to{transform:translateX(176px)}}"
+        "@keyframes sweep{0%{transform:translateX(0)}30%,100%{transform:translateX(440px)}}"
+        "@media (prefers-reduced-motion:reduce){.float,.holo,.shine{animation:none}}"
+        "</style>"
+    )
+    out.append(
+        "<defs>"
+        f'<radialGradient id="glow"><stop offset="0" stop-color="{c["accent"]}" stop-opacity="{0.22 if theme == "dark" else 0.14}"/>'
+        f'<stop offset="1" stop-color="{c["accent"]}" stop-opacity="0"/></radialGradient>'
+        '<linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1b2338"/>'
+        '<stop offset="1" stop-color="#090c14"/></linearGradient>'
+        '<linearGradient id="rainbow">'
+        + "".join(f'<stop offset="{i / 6:.3f}" stop-color="{col}"/>' for i, col in enumerate(HOLO))
+        + "</linearGradient>"
+        '<linearGradient id="shinefill"><stop offset="0" stop-color="#fff" stop-opacity="0"/>'
+        '<stop offset=".5" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>'
+        '<pattern id="dots" width="6" height="6" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".7" fill="#fff" opacity=".18"/></pattern>'
+        '<clipPath id="card"><rect x="-84" y="-118" width="168" height="236" rx="14"/></clipPath>'
+        "</defs>"
+    )
+    out.append(f'<ellipse cx="{W / 2}" cy="{H / 2}" rx="390" ry="145" fill="url(#glow)"/>')
+    hexagon = " ".join(
+        f"{20 * math.cos(math.radians(60 * k - 90)):.1f},"
+        f"{-62 + 20 * math.sin(math.radians(60 * k - 90)):.1f}"
+        for k in range(6)
+    )
+    for i, cert in enumerate(certs):
+        offset = i - (n - 1) / 2
+        cx, cy, rot = W / 2 + offset * spread, H / 2 + 4 + abs(offset) * 6, offset * 4.5
+        lines = wrap(cert["name"], 17)
+        size = 15 if len(lines) <= 2 else 13
+        lines = lines[:3]
+        out.append(f'<g transform="translate({cx:.1f},{cy:.1f}) rotate({rot:.1f})">')
+        out.append(f'<g class="float" style="animation-delay:-{i * 0.9:.1f}s">')
+        out.append('<rect x="-84" y="-118" width="168" height="236" rx="14" fill="url(#body)"/>')
+        out.append('<g clip-path="url(#card)">')
+        out.append(f'<rect class="holo" style="animation-delay:-{i * 2}s" x="-260" y="-118" width="520" height="236" fill="url(#rainbow)" opacity=".26"/>')
+        out.append('<rect x="-84" y="44" width="168" height="74" fill="url(#dots)"/>')
+        out.append(
+            f'<g transform="skewX(-18)"><rect class="shine" style="animation-delay:{1 + i * 0.35:.2f}s" '
+            'x="-200" y="-118" width="60" height="236" fill="url(#shinefill)"/></g>'
+        )
+        out.append("</g>")
+        out.append('<rect x="-84" y="-118" width="168" height="236" rx="14" fill="none" stroke="#fff" stroke-opacity=".22"/>')
+        out.append(f'<polygon points="{hexagon}" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="1.5"/>')
+        out.append('<path d="M-8,-62 l5,5 l11,-11" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>')
+        out.append('<text x="0" y="-18" text-anchor="middle" class="kick">CERTIFIED</text>')
+        for j, line in enumerate(lines):
+            out.append(f'<text x="0" y="{6 + j * (size + 4)}" text-anchor="middle" class="name" font-size="{size}">{escape(line)}</text>')
+        out.append(f'<text x="0" y="{12 + len(lines) * (size + 4)}" text-anchor="middle" class="sub">{escape(cert["issuer"])}</text>')
+        out.append(f'<text x="-68" y="102" class="meta">{escape(str(cert["year"]))}</text>')
+        out.append('<text x="68" y="102" text-anchor="end" class="meta">VERIFIED</text>')
+        out.append("</g></g>")
+    out.append("</svg>")
+    return "\n".join(out) + "\n"
+
+
 # ---------------------------------------------------------------------------- main
 
 def main() -> int:
@@ -676,7 +970,9 @@ def main() -> int:
     source.add_argument("--user", help="GitHub login to fetch (needs GITHUB_TOKEN)")
     source.add_argument("--data", type=Path, help="redraw from a saved stats.json instead of fetching")
     parser.add_argument("--out", type=Path, default=Path("assets"), help="output folder (default: assets)")
+    parser.add_argument("--profile", type=Path, default=Path("profile.json"), help="text shown on the cards")
     args = parser.parse_args()
+    profile = json.loads(args.profile.read_text())
 
     if args.data:
         summary = json.loads(args.data.read_text())
@@ -689,11 +985,19 @@ def main() -> int:
 
     args.out.mkdir(parents=True, exist_ok=True)
     (args.out / "stats.json").write_text(json.dumps(summary, indent=2, ensure_ascii=False) + "\n")
+    certs = profile.get("certifications", [])
     for theme in THEMES:
         (args.out / f"stats-{theme}.svg").write_text(render_stats(summary, theme))
         (args.out / f"header-{theme}.svg").write_text(
-            render_header(theme, summary, ["mobile", "the web", "the Mac"], "App developer · Riyadh, Saudi Arabia")
+            render_header(theme, summary, profile["tagline"], profile["subtitle"])
         )
+        (args.out / f"terminal-{theme}.svg").write_text(render_terminal(summary, profile, theme))
+        (args.out / f"vitals-{theme}.svg").write_text(render_vitals(summary, theme))
+        cert_file = args.out / f"certs-{theme}.svg"
+        if certs:
+            cert_file.write_text(render_certs(certs, theme))
+        elif cert_file.exists():
+            cert_file.unlink()
     print(
         f"{summary['login']}: {summary['total']:,} contributions, "
         f"streak {summary['current_streak']['days']} (best {summary['longest_streak']['days']}), "
